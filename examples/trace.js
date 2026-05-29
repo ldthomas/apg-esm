@@ -1,0 +1,47 @@
+/*  *************************************************************************************
+ *   copyright: Copyright (c) 2026 Lowell D. Thomas
+ *     license: MIT (https://opensource.org/license/mit)
+ *   ********************************************************************************* */
+import Api from '../src/apg-api/api.js';
+import Parser from '../src/apg-lib/parser.js';
+import Trace from '../src/apg-lib/trace.js';
+
+const description = `
+Demonstrate how to generate a trace of the parser through the parse tree.
+Note that the parse tree spacing is normally of the form "....|....|",
+but when in look ahead mode the form is, "****~****~".
+`;
+
+const THIS_FILENAME = 'examples/trace.js';
+function single() {
+  /* the SABNF grammar */
+  let anbncn = '';
+  anbncn += 'S = &(AB !b) *a BC !c\n';
+  anbncn += 'AB = a [AB] b\n';
+  anbncn += 'BC = b [BC] c\n';
+  anbncn += 'a = %s"a"\n';
+  anbncn += 'b = %s"b"\n';
+  anbncn += 'c = %s"c"\n';
+
+  /* test complete generation in one step */
+  const api = new Api(anbncn);
+  api.generate();
+  if (api.errors.length) {
+    console.log(api.errorsToAscii());
+    throw new Error(`${THIS_FILENAME}grammar has errors`);
+  }
+
+  /* make a parser from the grammar object */
+  const grammar = api.toObject();
+  const parser = new Parser(grammar);
+  const trace = new Trace();
+  parser.setTrace(trace);
+  const result = parser.parse(0, 'aaaaabbbbbccccc');
+  console.log(description);
+  console.log('LOOK AHEAD PARSER RESULT');
+  console.dir(result);
+  console.log('LOOK AHEAD PARSER TRACE');
+  console.log();
+  console.log(trace.display());
+}
+single();

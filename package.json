@@ -1,0 +1,64 @@
+{
+  "name": "apg-esm",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "JavaScript APG, an ABNF Parser Generator",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --silent --coverage",
+    "jest": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "apg": "node src/apg/generator.js",
+    "server": "node server.js",
+    "jsdoc": "jsdoc --configure jsdoc.json",
+    "fixed": "node examples/basic/fixed.js",
+    "astfixed": "node examples/basic/astFixed.js",
+    "single": "node examples/basic/single.js",
+    "separate": "node examples/basic/separate.js",
+    "ast": "node examples/ast.js",
+    "lookAhead": "node examples/lookAhead.js",
+    "stats": "node examples/stats.js",
+    "trace": "node examples/trace.js",
+    "traceSabnf": "node examples/traceSabnf.js",
+    "udt": "node examples/udt.js"
+  },
+  "files": [
+    "src",
+    "index.js",
+    "LICENSE.md",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ldthomas/apg-esm.git"
+  },
+  "keywords": [
+    "APG",
+    "parser",
+    "generator",
+    "ABNF",
+    "SABNF"
+  ],
+  "author": "Lowell D. Thomas <ldt@sabnf.com> (https://sabnf.com/)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ldthomas/apg-esm/issues"
+  },
+  "homepage": "https://github.com/ldthomas/apg-esm",
+  "jest": {
+    "testMatch": [
+      "**/__tests__/*.test.js"
+    ]
+  },
+  "devDependencies": {
+    "eslint": "^8.57.1",
+    "eslint-config-airbnb": "^18.2.1",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-config-prettier": "^9.1.2",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-prettier": "^5.5.6",
+    "jest": "^30.3.0",
+    "jsdoc": "^4.0.5",
+    "prettier": "^3.8.3",
+    "prettier-eslint": "^16.3.0"
+  }
+}

@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>APG Parse Tree Visualizer — User Guide</title>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: 'Segoe UI', system-ui, sans-serif;
+        background: #1e1e2e;
+        color: #cdd6f4;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      header {
+        background: #181825;
+        border-bottom: 1px solid #313244;
+        padding: 14px 24px;
+        display: flex;
+        align-items: baseline;
+        gap: 16px;
+      }
+
+      header h1 {
+        font-size: 1.05rem;
+        color: #89b4fa;
+        letter-spacing: 0.05em;
+        flex: 1;
+        text-align: center;
+      }
+
+      header a {
+        font-size: 0.8rem;
+        color: #cba6f7;
+        text-decoration: none;
+      }
+      header a:hover {
+        text-decoration: underline;
+      }
+
+      main {
+        flex: 1;
+        max-width: 820px;
+        width: 100%;
+        margin: 0 auto;
+        padding: 36px 24px 60px;
+      }
+
+      /* ── Section headings ───────────────────── */
+      h2 {
+        font-size: 1rem;
+        color: #89b4fa;
+        border-bottom: 1px solid #313244;
+        padding-bottom: 6px;
+        margin-top: 36px;
+        margin-bottom: 12px;
+        letter-spacing: 0.04em;
+      }
+
+      h3 {
+        font-size: 0.9rem;
+        color: #cba6f7;
+        margin-top: 20px;
+        margin-bottom: 8px;
+      }
+
+      p {
+        font-size: 0.88rem;
+        line-height: 1.7;
+        color: #bac2de;
+        margin-bottom: 10px;
+      }
+
+      ul,
+      ol {
+        font-size: 0.88rem;
+        line-height: 1.7;
+        color: #bac2de;
+        padding-left: 1.4em;
+        margin-bottom: 10px;
+      }
+
+      li {
+        margin-bottom: 4px;
+      }
+
+      code {
+        font-family: 'Cascadia Code', 'Fira Code', monospace;
+        font-size: 0.82rem;
+        background: #313244;
+        color: #a6e3a1;
+        border-radius: 4px;
+        padding: 1px 5px;
+      }
+
+      pre {
+        font-family: 'Cascadia Code', 'Fira Code', monospace;
+        font-size: 0.8rem;
+        background: #181825;
+        border: 1px solid #313244;
+        border-radius: 6px;
+        padding: 14px 16px;
+        overflow-x: auto;
+        color: #cdd6f4;
+        margin-bottom: 12px;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        font-size: 0.65rem;
+        font-weight: 700;
+        margin-right: 6px;
+        vertical-align: middle;
+        flex-shrink: 0;
+      }
+      .badge-match {
+        background: #a6e3a1;
+        color: #1e1e2e;
+      }
+      .badge-nomatch {
+        background: #f38ba8;
+        color: #1e1e2e;
+      }
+      .badge-empty {
+        background: #f9e2af;
+        color: #1e1e2e;
+      }
+      .badge-enter {
+        background: #313244;
+        border: 1.5px solid #6c7086;
+        color: #cdd6f4;
+      }
+
+      .note {
+        background: #181825;
+        border-left: 3px solid #89b4fa;
+        border-radius: 0 6px 6px 0;
+        padding: 10px 14px;
+        font-size: 0.85rem;
+        color: #bac2de;
+        margin: 14px 0;
+      }
+
+      main a {
+        color: #89b4fa;
+        text-decoration: none;
+      }
+      main a:hover {
+        text-decoration: underline;
+      }
+
+      footer {
+        background: #181825;
+        border-top: 1px solid #313244;
+        padding: 10px 24px;
+        font-size: 0.75rem;
+        color: #6c7086;
+        text-align: center;
+      }
+
+      /* ── Scrollbar ───────────────────────────── */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #45475a;
+        border-radius: 3px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>APG &mdash; Parse Tree Visualizer &mdash; User Guide</h1>
+    </header>
+
+    <main>
+      <!-- ── OVERVIEW ───────────────────────────── -->
+      <h2>Overview</h2>
+      <p>
+        The <strong>APG Parse Tree Visualizer</strong> renders the parse tree produced by an APG parser in a
+        step-by-step, animated format. Each step corresponds to one node traversal event recorded by the trace object
+        during a parse.
+      </p>
+      <p>
+        The page's main display, the left panel, shows the parse tree as node operators for each step, indented to show
+        the tree depth of the node, and followed by the string being parsed. The right panel displays the input string,
+        with highlighting to show the matched characters, current node information and the parsing progress.
+      </p>
+      <p>
+        The title bar has all of the controls for loading the trace into the main panel and various methods for stepping
+        through the tree. The footer contains a legend for the color coding of the node states.
+      </p>
+
+      <!-- ── LOADING TRACE DATA ─────────────────── -->
+      <h2>Loading Trace Data</h2>
+      <p>
+        The Parse Tree Visualizer provides a textarea to enter a parse tree (output from trace.display()). There are
+        three main ways to access this.
+      </p>
+      <ol>
+        <li>
+          The primary way is from the Parser Generator page (./docs/index.html). After generating a grammar object from
+          an SABNF grammar and parsing a string with the Trace Parse Tree box checked, the Trace Parse Tree tab will
+          have a link with instructions for accessing the Parse Tree Visualizer
+        </li>
+        <li>
+          Once the Visualizer page has been displayed, clicking the Load New Trace button in the header will display the
+          input textarea for a new parse tree.
+        </li>
+        <li>
+          The Visualizer page can also be displayed directly from its file URL (file://&lt;path to
+          project&gt;/docs/parsetree-visualizer.html). The input textarea will automatically be displayed.
+        </li>
+      </ol>
+
+      <!-- ── NAVIGATING THE TREE ────────────────── -->
+      <h2>Navigating the Parse Tree</h2>
+      <p>There are several options for stepping through the parse tree.</p>
+      <ul>
+        <li>
+          <strong>&#x25B6; Play</strong> — starts an animation that advances through the tree automatically. The
+          rightmost slider controls playback speed.
+        </li>
+        <li>
+          <strong>&#x25c0; Prev</strong> — moves one step back. The &#8593; and &#8592; arrow keys are shortcuts for
+          this button.
+        </li>
+        <li>
+          <strong>Next &#x25B6;</strong> — moves one step forward. The &#8595; and &#8594; arrow keys are shortcuts for
+          this button.
+        </li>
+        <li>
+          <strong>Position slider</strong> (to the right of the Next button) — drag to jump directly to any position in
+          the tree.
+        </li>
+        <li><strong>Row click</strong> — clicking any row in the parse tree advances the display to that step.</li>
+      </ul>
+
+      <!-- ── TRACE FORMAT ───────────────────────── -->
+      <h2>Trace Output Format</h2>
+      <p>
+        Once a parse tree has been loaded the tree displays in the left panel, one line for each step the parser has
+        taken. Each line has four parts.
+      </p>
+      <ul>
+        <li>The node&#39;s tree depth, indicated by the indentation.</li>
+        <li>The parser&#39;s state.</li>
+        <ul>
+          <li>
+            <span class="badge badge-enter">↓</span> <strong>Entering</strong> — the parser is descending into this
+            node.
+          </li>
+          <li>
+            <span class="badge badge-match">M</span> <strong>Match</strong> — the node matched one or more characters.
+          </li>
+          <li>
+            <span class="badge badge-empty">E</span> <strong>Empty</strong> — the node matched zero characters (valid
+            empty match).
+          </li>
+          <li>
+            <span class="badge badge-nomatch">N</span> <strong>No-match</strong> — the node failed to match any
+            characters.
+          </li>
+        </ul>
+        <li>
+          The node operator&dagger;.
+          <em>For complete node operator details see the <a href="./SABNF-grammar.html">SABNF Grammar Reference</a></em
+          >.
+        </li>
+        <p>
+          &dagger;
+          <em
+            >UDT not available here because the generator page is incapable of providing for the required user-written
+            callback function.</em
+          >
+        </p>
+        <li>
+          The string being parsed if entering state, the string matched on a successful node operation: ε if emtpy, or ✗
+          if no match is found.
+        </li>
+      </ul>
+
+      <!-- ── INPUT STRING ───────────────────────── -->
+      <h2>INPUT STRING</h2>
+      <p>
+        The input string is displayed in the upper portion of the right panel. Highlighting indicates the parser's
+        progress. When it is in an enter state, the first character of the string the parser is attempting to match will
+        be highlighted in light blue. Each time a character or phrase is matched, those characters are highlighted in
+        green. On failure, or the no match state, the failing character is highlighted in red. In this way the viewer
+        can follow the parser's path through the input string.
+      </p>
+
+      <!-- ── CURRENT NODE ───────────────────────── -->
+      <h2>CURRENT NODE</h2>
+      <p>
+        The current node panel below the input string gives a mostly self-explanatory summary of the currently
+        highlighted node. Note that <em>Look-ahead yes</em> means that the node is on a branch whose parent node is an
+        AND or NOT operator.
+      </p>
+
+      <!-- ── PRORESS ───────────────────────── -->
+      <h2>PROGRESS</h2>
+      <p>
+        The progress panel below the current node gives a self-exlanatory summary of the number of steps and states up
+        to and including the current node.
+      </p>
+    </main>
+
+    <footer>APG Parse Tree Visualizer &mdash; User Guide</footer>
+  </body>
+</html>

@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>APG — SABNF Parser Generator</title>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #f0f2f5;
+        color: #1a1a2e;
+        min-height: 100vh;
+      }
+
+      /* ── Header ─────────────────────────────── */
+      header {
+        background: #1a1a2e;
+        color: #fff;
+        padding: 14px 24px;
+        font-size: 1.2rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        justify-content: center;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      header .brand {
+        color: #90caf9;
+      }
+
+      /* ── Layout ─────────────────────────────── */
+      main {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      /* ── Panel card ─────────────────────────── */
+      .card {
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.09);
+        overflow: hidden;
+      }
+      .card-title {
+        background: #e8eaf6;
+        padding: 10px 20px;
+        font-size: 0.9375rem;
+        font-weight: 600;
+        color: #283593;
+        border-bottom: 1px solid #c5cae9;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .card-body {
+        padding: 16px 20px;
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+      }
+
+      /* ── Textareas ──────────────────────────── */
+      textarea {
+        flex: 1;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 0.875rem;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        padding: 10px;
+        resize: vertical;
+        background: #fafafa;
+        color: #111;
+        min-width: 0;
+      }
+      textarea:focus {
+        outline: none;
+        border-color: #5c6bc0;
+        background: #fff;
+      }
+      #grammar-input {
+        min-height: 220px;
+      }
+      #parse-input {
+        min-height: 120px;
+      }
+
+      /* ── Controls sidebar ───────────────────── */
+      .controls {
+        width: 210px;
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .check-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 10px 12px;
+        background: #f5f5f5;
+        border: 1px solid #e0e0e0;
+        border-radius: 4px;
+      }
+      .check-group label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.875rem;
+        cursor: pointer;
+        color: #333;
+        user-select: none;
+      }
+      .check-group input[type='checkbox'] {
+        width: 15px;
+        height: 15px;
+        cursor: pointer;
+        accent-color: #5c6bc0;
+        flex-shrink: 0;
+      }
+      .btn-group {
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+      }
+
+      /* ── Buttons ────────────────────────────── */
+      button {
+        padding: 8px 14px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: background 0.12s, opacity 0.12s;
+        white-space: nowrap;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .btn-primary {
+        background: #5c6bc0;
+        color: #fff;
+      }
+      .btn-primary:hover:not(:disabled) {
+        background: #3f51b5;
+      }
+      .btn-secondary {
+        background: #e8eaf6;
+        color: #3949ab;
+        border: 1px solid #c5cae9;
+      }
+      .btn-secondary:hover:not(:disabled) {
+        background: #c5cae9;
+      }
+
+      /* ── Tab system ─────────────────────────── */
+      .results-wrap {
+        padding: 0 20px 18px;
+      }
+      .tab-bar {
+        display: flex;
+        gap: 0;
+        border-bottom: 2px solid #c5cae9;
+        flex-wrap: wrap;
+      }
+      .tab-bar:empty {
+        border-bottom: none;
+      }
+      .tab-btn {
+        padding: 6px 15px;
+        background: #e8eaf6;
+        color: #5c6bc0;
+        border: 1px solid #c5cae9;
+        border-bottom: none;
+        border-radius: 4px 4px 0 0;
+        cursor: pointer;
+        font-size: 0.8125rem;
+        font-weight: 500;
+        margin-right: 2px;
+        margin-bottom: -1px;
+        transition: background 0.1s;
+      }
+      .tab-btn:hover {
+        background: #c5cae9;
+      }
+      .tab-btn.active {
+        background: #fff;
+        color: #283593;
+        border-bottom: 2px solid #fff;
+        z-index: 1;
+        position: relative;
+      }
+      .tab-btn.is-error {
+        color: #b71c1c;
+        background: #ffebee;
+        border-color: #ef9a9a;
+      }
+      .tab-btn.is-error:hover {
+        background: #ffcdd2;
+      }
+      .tab-btn.is-error.active {
+        background: #fff;
+        color: #b71c1c;
+      }
+
+      .tab-content {
+        border: 1px solid #c5cae9;
+        border-top: none;
+        border-radius: 0 0 4px 4px;
+        background: #fff;
+        min-height: 100px;
+      }
+      .tab-content pre {
+        padding: 12px 14px;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 0.8rem;
+        line-height: 1.55;
+        white-space: pre-wrap;
+        word-break: break-word;
+        color: #222;
+        margin: 0;
+      }
+      .tab-content pre.is-error {
+        color: #b71c1c;
+      }
+      .tab-content pre.is-success {
+        color: #2e7d32;
+      }
+      .tab-placeholder {
+        padding: 20px;
+        text-align: center;
+        color: #9e9e9e;
+        font-size: 0.875rem;
+      }
+
+      /* ── Grammar-ready indicator ────────────── */
+      .grammar-badge {
+        font-size: 0.75rem;
+        font-weight: 500;
+        padding: 2px 9px;
+        border-radius: 10px;
+        background: #e0e0e0;
+        color: #555;
+        margin-left: auto;
+        white-space: nowrap;
+      }
+      .grammar-badge.ready {
+        background: #c8e6c9;
+        color: #1b5e20;
+      }
+      .grammar-badge.error {
+        background: #ffcdd2;
+        color: #b71c1c;
+      }
+
+      /* ── Trace helper banner ────────────────── */
+      .trace-helper {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 9px 14px;
+        background: #e8f4fd;
+        border-bottom: 1px solid #b3d9f5;
+        font-size: 0.8125rem;
+        color: #1a5276;
+        flex-wrap: wrap;
+      }
+      .trace-helper-text {
+        flex: 1;
+        min-width: 120px;
+      }
+      .trace-helper a {
+        color: #1565c0;
+        font-weight: 600;
+        text-decoration: none;
+      }
+      .trace-helper a:hover {
+        text-decoration: underline;
+      }
+      .btn-copy-trace {
+        background: #1565c0;
+        color: #fff;
+        padding: 5px 12px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        border: none;
+        cursor: pointer;
+        white-space: nowrap;
+        flex-shrink: 0;
+        transition: background 0.12s;
+      }
+      .btn-copy-trace:hover {
+        background: #0d47a1;
+      }
+
+      /* ── Responsive ─────────────────────────── */
+      @media (max-width: 720px) {
+        .card-body {
+          flex-direction: column;
+        }
+        .controls {
+          width: 100%;
+          flex-direction: row;
+          flex-wrap: wrap;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <span class="brand">APG</span>
+      <span>— SABNF Parser Generator</span>
+    </header>
+
+    <main>
+      <!-- ═══════════════════════════ GRAMMAR SECTION ═══════════════════════════ -->
+      <div class="card">
+        <div class="card-title">Grammar Generator</div>
+        <div class="card-body">
+          <textarea
+            id="grammar-input"
+            placeholder="Enter SABNF grammar here…"
+            spellcheck="false"
+            autocorrect="off"
+            autocapitalize="off"
+          ></textarea>
+
+          <div class="controls">
+            <div class="check-group">
+              <label>
+                <input type="checkbox" id="cb-strict" />
+                Strict
+              </label>
+              <label>
+                <input type="checkbox" id="cb-display-rules" />
+                Display Rules
+              </label>
+              <label>
+                <input type="checkbox" id="cb-display-rule-deps" />
+                Display Rule Dependencies
+              </label>
+              <label>
+                <input type="checkbox" id="cb-display-attrs" />
+                Display Attributes
+              </label>
+            </div>
+            <div class="btn-group">
+              <button class="btn-primary" id="btn-generate">Generate</button>
+              <button class="btn-secondary" id="btn-copy">Copy</button>
+              <button class="btn-secondary" id="btn-download">Download</button>
+            </div>
+          </div>
+        </div>
+        <!-- card-body -->
+
+        <div class="results-wrap">
+          <div class="tab-bar" id="grammar-tab-bar"></div>
+          <div class="tab-content" id="grammar-tab-content">
+            <div class="tab-placeholder">Generation results will appear here.</div>
+          </div>
+        </div>
+      </div>
+      <!-- grammar card -->
+
+      <!-- ═══════════════════════════ PARSE SECTION ════════════════════════════ -->
+      <div class="card">
+        <div class="card-title">
+          Parser
+          <span class="grammar-badge" id="grammar-badge">No grammar generated</span>
+        </div>
+        <div class="card-body">
+          <textarea
+            id="parse-input"
+            placeholder="Enter text to parse…"
+            spellcheck="false"
+            autocorrect="off"
+            autocapitalize="off"
+          ></textarea>
+
+          <div class="controls">
+            <div class="check-group">
+              <label>
+                <input type="checkbox" id="cb-trace" />
+                Trace Parse Tree
+              </label>
+              <label>
+                <input type="checkbox" id="cb-trace-sabnf" />
+                Trace Grammar Text
+              </label>
+              <label>
+                <input type="checkbox" id="cb-stats" />
+                Statistics
+              </label>
+            </div>
+            <div class="btn-group">
+              <button class="btn-primary" id="btn-parse">Parse</button>
+            </div>
+          </div>
+        </div>
+        <!-- card-body -->
+
+        <div class="results-wrap">
+          <div class="tab-bar" id="parse-tab-bar"></div>
+          <div class="tab-content" id="parse-tab-content">
+            <div class="tab-placeholder">Parse results will appear here.</div>
+          </div>
+        </div>
+      </div>
+      <!-- parse card -->
+    </main>
+
+    <script type="module">
+      import Api from '../src/apg-api/api.js';
+      import Parser from '../src/apg-lib/parser.js';
+      import Stats from '../src/apg-lib/stats.js';
+      import Trace from '../src/apg-lib/trace.js';
+      import TraceSabnf from '../src/apg-lib/traceSabnf.js';
+
+      /* ─── State ─────────────────────────────────────────────────────── */
+      let grammarReady = false;
+      let grammarObject = null;
+      let grammarTabs = [];
+      let parseTabs = [];
+
+      /* Map numeric parser states to readable names. */
+      const STATE_NAME = { 100: 'ACTIVE', 101: 'MATCH', 102: 'EMPTY', 103: 'NOMATCH' };
+      function stateName(n) {
+        return STATE_NAME[n] ?? String(n);
+      }
+
+      /* ─── Tab helpers ───────────────────────────────────────────────── */
+
+      /**
+       * Rebuild the tab bar and show the tab at `activeIdx`.
+       * Each tab object: { label, content, isError?, isSuccess? }
+       */
+      function renderTabs(prefix, tabs, activeIdx = 0) {
+        if (prefix === 'grammar') grammarTabs = tabs;
+        else parseTabs = tabs;
+
+        const bar = document.getElementById(`${prefix}-tab-bar`);
+        const content = document.getElementById(`${prefix}-tab-content`);
+
+        bar.innerHTML = '';
+        content.innerHTML = '';
+
+        if (!tabs.length) {
+          content.innerHTML = '<div class="tab-placeholder">No results.</div>';
+          return;
+        }
+
+        tabs.forEach((tab, i) => {
+          const btn = document.createElement('button');
+          btn.className = 'tab-btn' + (i === activeIdx ? ' active' : '') + (tab.isError ? ' is-error' : '');
+          btn.textContent = tab.label;
+          btn.addEventListener('click', () => switchTab(prefix, i));
+          bar.appendChild(btn);
+        });
+
+        showContent(content, tabs[activeIdx]);
+      }
+
+      function switchTab(prefix, idx) {
+        const bar = document.getElementById(`${prefix}-tab-bar`);
+        const content = document.getElementById(`${prefix}-tab-content`);
+        const tabs = prefix === 'grammar' ? grammarTabs : parseTabs;
+
+        bar.querySelectorAll('.tab-btn').forEach((btn, i) => btn.classList.toggle('active', i === idx));
+
+        content.innerHTML = '';
+        showContent(content, tabs[idx]);
+      }
+
+      function showContent(container, tab) {
+        if (tab.isTrace) {
+          const banner = document.createElement('div');
+          banner.className = 'trace-helper';
+          const span = document.createElement('span');
+          span.className = 'trace-helper-text';
+          span.innerHTML =
+            'Copy this trace and paste it into the ' +
+            '<a href="./parsetree-visualizer.html" target="_blank">Parse Tree Visualizer</a>' +
+            ' for an interactive, step-by-step parse view.';
+          const copyBtn = document.createElement('button');
+          copyBtn.className = 'btn-copy-trace';
+          copyBtn.textContent = 'Copy Trace';
+          copyBtn.addEventListener('click', async () => {
+            try {
+              await navigator.clipboard.writeText(tab.content);
+              copyBtn.textContent = 'Copied!';
+              setTimeout(() => {
+                copyBtn.textContent = 'Copy Trace';
+              }, 1500);
+            } catch (e) {
+              alert('Copy failed: ' + e.message);
+            }
+          });
+          banner.appendChild(span);
+          banner.appendChild(copyBtn);
+          container.appendChild(banner);
+        }
+
+        if (tab.isTraceSabnf) {
+          const banner = document.createElement('div');
+          banner.className = 'trace-helper';
+          const span = document.createElement('span');
+          span.className = 'trace-helper-text';
+          span.innerHTML =
+            'Open this trace in the ' +
+            '<a href="./grammar-visualizer.html" target="_blank">Grammar Trace Visualizer</a>' +
+            ' for an interactive, step-by-step grammar view.';
+          const copyBtn = document.createElement('button');
+          copyBtn.className = 'btn-copy-trace';
+          copyBtn.textContent = 'Copy Trace';
+          copyBtn.addEventListener('click', async () => {
+            try {
+              await navigator.clipboard.writeText(tab.content);
+              copyBtn.textContent = 'Copied!';
+              setTimeout(() => {
+                copyBtn.textContent = 'Copy Trace';
+              }, 1500);
+            } catch (e) {
+              alert('Copy failed: ' + e.message);
+            }
+          });
+          banner.appendChild(span);
+          banner.appendChild(copyBtn);
+          container.appendChild(banner);
+        }
+
+        const pre = document.createElement('pre');
+        if (tab.isError) pre.className = 'is-error';
+        if (tab.isSuccess) pre.className = 'is-success';
+        pre.textContent = tab.content;
+        container.appendChild(pre);
+      }
+
+      /* ─── Grammar status badge ──────────────────────────────────────── */
+      function setGrammarBadge(state /* 'ready' | 'error' | '' */) {
+        const badge = document.getElementById('grammar-badge');
+        badge.className = 'grammar-badge' + (state ? ` ${state}` : '');
+        badge.textContent =
+          state === 'ready' ? 'Grammar ready' : state === 'error' ? 'Grammar has errors' : 'No grammar generated';
+      }
+
+      /* ─── Generate ──────────────────────────────────────────────────── */
+      function generateGrammar() {
+        const strict = document.getElementById('cb-strict').checked;
+        const rawGrammar = document.getElementById('grammar-input').value;
+        const grammar = strict ? rawGrammar.replace(/\r?\n/g, '\r\n') : rawGrammar;
+        const displayRules = document.getElementById('cb-display-rules').checked;
+        const displayRuleDeps = document.getElementById('cb-display-rule-deps').checked;
+        const displayAttrs = document.getElementById('cb-display-attrs').checked;
+
+        grammarObject = null;
+        grammarReady = false;
+        setGrammarBadge('');
+
+        const tabs = [];
+        try {
+          const api = new Api(grammar);
+
+          api.scan(strict);
+          if (api.errors.length) {
+            tabs.push({ label: 'Errors', content: `GRAMMAR CHARACTER ERRORS\n${api.errorsToAscii()}`, isError: true });
+            setGrammarBadge('error');
+            renderTabs('grammar', tabs, 0);
+            return;
+          }
+
+          api.parse(strict);
+          if (api.errors.length) {
+            tabs.push({ label: 'Errors', content: `GRAMMAR SYNTAX ERRORS\n${api.errorsToAscii()}`, isError: true });
+            setGrammarBadge('error');
+            renderTabs('grammar', tabs, 0);
+            return;
+          }
+
+          api.translate();
+          if (api.errors.length) {
+            tabs.push({ label: 'Errors', content: `GRAMMAR SEMANTIC ERRORS\n${api.errorsToAscii()}`, isError: true });
+            setGrammarBadge('error');
+            renderTabs('grammar', tabs, 0);
+            return;
+          }
+
+          if (displayRules) {
+            tabs.push({ label: 'Rules', content: api.displayRules('alpha') });
+          }
+
+          const errorCount = api.attributes();
+          if (errorCount > 0) {
+            let errText = `GRAMMAR ATTRIBUTE ERRORS\n${api.displayAttributeErrors()}`;
+            if (displayAttrs) {
+              errText += `\n${api.displayAttributes('type')}`;
+            }
+            tabs.push({ label: 'Errors', content: errText, isError: true });
+            setGrammarBadge('error');
+            renderTabs(
+              'grammar',
+              tabs,
+              tabs.findIndex((t) => t.isError)
+            );
+            return;
+          }
+
+          if (displayRuleDeps) {
+            tabs.push({ label: 'Rule Dependencies', content: api.displayRuleDependencies('type') });
+          }
+          if (displayAttrs) {
+            tabs.push({ label: 'Attributes', content: api.displayAttributes('type') });
+          }
+
+          grammarObject = api.toObject();
+          grammarReady = true;
+          setGrammarBadge('ready');
+          if (tabs.length === 0) {
+            tabs.push({ label: 'Status', content: 'Grammar generated successfully.', isSuccess: true });
+          }
+          renderTabs('grammar', tabs, 0);
+        } catch (e) {
+          setGrammarBadge('error');
+          renderTabs('grammar', [{ label: 'Error', content: `EXCEPTION: ${e.message}`, isError: true }]);
+        }
+      }
+
+      /* ─── Copy grammar ──────────────────────────────────────────────── */
+      async function copyGrammar() {
+        const grammar = document.getElementById('grammar-input').value;
+        try {
+          await navigator.clipboard.writeText(grammar);
+          const btn = document.getElementById('btn-copy');
+          const original = btn.textContent;
+          btn.textContent = 'Copied!';
+          setTimeout(() => {
+            btn.textContent = original;
+          }, 1500);
+        } catch (e) {
+          /* Clipboard API may be unavailable in non-secure contexts */
+          alert(`Copy failed: ${e.message}`);
+        }
+      }
+
+      /* ─── Download grammar ──────────────────────────────────────────── */
+      function downloadGrammar() {
+        const grammar = document.getElementById('grammar-input').value;
+        const blob = new Blob([grammar], { type: 'text/plain; charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'sabnf.txt';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+
+      /* ─── Parse ─────────────────────────────────────────────────────── */
+      function parseInput() {
+        if (!grammarReady || !grammarObject) {
+          renderTabs('parse', [
+            {
+              label: 'Error',
+              content: 'No grammar generated. Please generate a grammar first.',
+              isError: true,
+            },
+          ]);
+          return;
+        }
+
+        const input = document.getElementById('parse-input').value;
+        const traceEnabled = document.getElementById('cb-trace').checked;
+        const traceSabnfEnabled = document.getElementById('cb-trace-sabnf').checked;
+        const statsEnabled = document.getElementById('cb-stats').checked;
+
+        const tabs = [];
+        try {
+          const traceObj = traceEnabled ? new Trace() : null;
+          const traceSabnfObj = traceSabnfEnabled ? new TraceSabnf() : null;
+          const statsObj = statsEnabled ? new Stats() : null;
+          const parser = new Parser(grammarObject);
+          if (traceObj) parser.setTrace(traceObj);
+          if (traceSabnfObj) parser.setTraceSabnf(traceSabnfObj);
+          if (statsObj) parser.setStats(statsObj);
+
+          const r = parser.parse(0, input);
+          const matched = r.success || r.state === 102; /* EMPTY */
+          const resultText =
+            'Parse Result\n' +
+            '============\n' +
+            `Success:        ${r.success ? 'YES' : 'NO'}\n` +
+            `State:          ${stateName(r.state)}\n` +
+            `Input length:   ${r.length}\n` +
+            `Matched:        ${r.matched}\n` +
+            `Max matched:    ${r.maxMatched}\n` +
+            `Max tree depth: ${r.maxTreeDepth}\n` +
+            `Node hits:      ${r.nodeHits}\n`;
+
+          tabs.push({
+            label: 'Results',
+            content: resultText,
+            isSuccess: matched,
+            isError: !matched,
+          });
+
+          if (traceEnabled && traceObj) {
+            tabs.push({ label: 'Trace Parse Tree', content: traceObj.display(), isTrace: true });
+          }
+          if (traceSabnfEnabled && traceSabnfObj) {
+            tabs.push({ label: 'Trace Grammar Text', content: traceSabnfObj.display(), isTraceSabnf: true });
+          }
+          if (statsEnabled && statsObj) {
+            tabs.push({ label: 'Statistics', content: statsObj.displayStats() + '\n' + statsObj.displayHits('hits') });
+          }
+
+          renderTabs('parse', tabs, 0);
+        } catch (e) {
+          renderTabs('parse', [{ label: 'Error', content: `EXCEPTION: ${e.message}`, isError: true }]);
+        }
+      }
+
+      /* ─── Reset on load ─────────────────────────────────────────────── */
+      document.querySelectorAll('textarea').forEach((ta) => {
+        ta.value = '';
+      });
+      document.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
+        cb.checked = false;
+      });
+
+      /* ─── Button & keyboard wiring ──────────────────────────────────── */
+      document.getElementById('btn-generate').addEventListener('click', generateGrammar);
+      document.getElementById('btn-copy').addEventListener('click', copyGrammar);
+      document.getElementById('btn-download').addEventListener('click', downloadGrammar);
+      document.getElementById('btn-parse').addEventListener('click', parseInput);
+
+      document.getElementById('grammar-input').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+          e.preventDefault();
+          generateGrammar();
+        }
+      });
+      document.getElementById('parse-input').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+          e.preventDefault();
+          parseInput();
+        }
+      });
+    </script>
+  </body>
+</html>

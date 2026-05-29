@@ -1,0 +1,1020 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>APG Parse Tree Visualizer</title>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: 'Segoe UI', system-ui, sans-serif;
+        background: #1e1e2e;
+        color: #cdd6f4;
+        height: 100vh;
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        overflow: hidden;
+      }
+
+      /* -- Header -- */
+      header {
+        background: #181825;
+        border-bottom: 1px solid #313244;
+        padding: 10px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      header h1 {
+        font-size: 1rem;
+        color: #89b4fa;
+        letter-spacing: 0.05em;
+        flex: 1;
+        white-space: nowrap;
+      }
+      .btn {
+        background: #313244;
+        border: 1px solid #45475a;
+        color: #cdd6f4;
+        border-radius: 6px;
+        padding: 5px 12px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        transition: background 0.15s;
+      }
+      .btn:hover {
+        background: #45475a;
+      }
+      .btn:disabled {
+        opacity: 0.35;
+        cursor: default;
+      }
+      .btn.primary {
+        background: #89b4fa;
+        color: #1e1e2e;
+        border-color: #89b4fa;
+      }
+      .btn.primary:hover {
+        background: #74c7ec;
+        border-color: #74c7ec;
+      }
+
+      #stepLabel {
+        font-size: 0.85rem;
+        color: #6c7086;
+        white-space: nowrap;
+      }
+
+      input[type='range'] {
+        accent-color: #89b4fa;
+        width: 160px;
+        cursor: pointer;
+      }
+
+      /* -- Main layout -- */
+      main {
+        display: grid;
+        grid-template-columns: 1fr 320px;
+        overflow: hidden;
+      }
+
+      /* -- Tree panel -- */
+      #treePanel {
+        overflow-y: auto;
+        padding: 12px 16px;
+        border-right: 1px solid #313244;
+      }
+
+      .node {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 2px 0;
+        padding-left: calc(var(--depth) * 18px);
+        font-size: 0.82rem;
+        font-family: 'Cascadia Code', 'Fira Code', monospace;
+        border-radius: 4px;
+        cursor: default;
+        transition: background 0.1s;
+        position: relative;
+      }
+      .node:hover {
+        background: #313244;
+      }
+      .node.active {
+        background: #45475a;
+        outline: 1px solid #89b4fa;
+      }
+
+      /* Indent guide lines */
+      .node::before {
+        content: '';
+        position: absolute;
+        left: calc(var(--depth) * 18px - 9px);
+        top: 0;
+        bottom: 0;
+        width: 1px;
+        background: #313244;
+      }
+      .node[data-depth='0']::before {
+        display: none;
+      }
+
+      .node-icon {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.65rem;
+        font-weight: 700;
+      }
+      .icon-enter {
+        background: #313244;
+        border: 1.5px solid #6c7086;
+      }
+      .icon-match {
+        background: #a6e3a1;
+        color: #1e1e2e;
+      }
+      .icon-nomatch {
+        background: #f38ba8;
+        color: #1e1e2e;
+      }
+      .icon-empty {
+        background: #f9e2af;
+        color: #1e1e2e;
+      }
+
+      .node-op {
+        color: #89b4fa;
+      }
+      .node-op.lookahead {
+        color: #cba6f7;
+      }
+      .node-op.terminal {
+        color: #a6e3a1;
+      }
+      .node-arrow {
+        color: #6c7086;
+      }
+      .node-phrase {
+        color: #fab387;
+      }
+
+      .future {
+        opacity: 0.25;
+      }
+
+      /* -- Info sidebar -- */
+      #sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        overflow-y: auto;
+      }
+
+      .sidebar-section {
+        border-bottom: 1px solid #313244;
+        padding: 12px 14px;
+      }
+      .sidebar-section h2 {
+        font-size: 0.75rem;
+        color: #6c7086;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 8px;
+      }
+
+      /* Input string display */
+      #inputDisplay {
+        font-family: 'Cascadia Code', 'Fira Code', monospace;
+        font-size: 0.9rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1px;
+        line-height: 1.8;
+        max-height: 140px;
+        overflow-y: auto;
+      }
+      .ch {
+        display: inline-block;
+        padding: 0 3px;
+        border-radius: 3px;
+      }
+      .ch.in-window {
+        background: #313244;
+      }
+      .ch.matched {
+        background: #a6e3a1;
+        color: #1e1e2e;
+      }
+      .ch.cursor {
+        background: #89b4fa;
+        color: #1e1e2e;
+        border-radius: 3px;
+      }
+      .ch.nomatch {
+        background: #f38ba8;
+        color: #1e1e2e;
+        border-radius: 3px;
+      }
+
+      /* Node detail */
+      #nodeDetail {
+        display: grid;
+        grid-template-columns: 80px 1fr;
+        gap: 4px 8px;
+        font-size: 0.82rem;
+      }
+      .detail-label {
+        color: #6c7086;
+      }
+      .detail-value {
+        color: #cdd6f4;
+        font-family: 'Cascadia Code', 'Fira Code', monospace;
+        word-break: break-all;
+      }
+
+      /* Stats */
+      #statsDisplay {
+        font-size: 0.82rem;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4px 8px;
+      }
+      .stat-label {
+        color: #6c7086;
+      }
+      .stat-value {
+        color: #cdd6f4;
+        font-family: monospace;
+      }
+
+      /* Paste overlay */
+      #overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
+      }
+      #overlay.hidden {
+        display: none;
+      }
+      .modal {
+        background: #181825;
+        border: 1px solid #313244;
+        border-radius: 12px;
+        padding: 24px;
+        width: min(640px, 90vw);
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .modal h2 {
+        color: #89b4fa;
+        font-size: 1rem;
+      }
+      .modal p {
+        font-size: 0.85rem;
+        color: #6c7086;
+      }
+      #traceInput {
+        background: #1e1e2e;
+        border: 1px solid #45475a;
+        color: #cdd6f4;
+        border-radius: 6px;
+        padding: 10px;
+        font-family: 'Cascadia Code', 'Fira Code', monospace;
+        font-size: 0.8rem;
+        resize: vertical;
+        height: 260px;
+        outline: none;
+      }
+      #traceInput:focus {
+        border-color: #89b4fa;
+      }
+
+      /* Footer */
+      footer {
+        background: #181825;
+        border-top: 1px solid #313244;
+        padding: 6px 16px;
+        font-size: 0.75rem;
+        color: #6c7086;
+        display: flex;
+        gap: 16px;
+        align-items: center;
+      }
+
+      /* Speed control */
+      #speedLabel {
+        font-size: 0.82rem;
+        color: #6c7086;
+      }
+
+      /* -- Truncation warning -- */
+      #truncWarning {
+        display: none;
+      }
+
+      /* Scrollbar */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #45475a;
+        border-radius: 3px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- -- Paste Overlay -- -->
+    <div id="overlay">
+      <div class="modal">
+        <h2>APG Parse Tree Visualizer</h2>
+        <p>
+          Paste the output from <code>trace.display()</code> below, then click <strong>Load</strong>.<br />
+          The output begins with the full input string, so no separate input field is needed.
+        </p>
+        <textarea id="traceInput" spellcheck="false" placeholder="Paste trace.display() output here&hellip;"></textarea>
+        <div style="display: flex; gap: 8px; justify-content: flex-end">
+          <button class="btn primary" id="loadBtn">Load Trace</button>
+          <button class="btn" id="demoBtn">Load Demo</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- -- Header -- -->
+    <header>
+      <h1>
+        APG &mdash; Parse Tree Visualizer &nbsp;<a
+          href="./parsetree-userguide.html"
+          target="_blank"
+          style="font-size: 0.75rem; color: #cba6f7; text-decoration: none; font-weight: 400; letter-spacing: 0.04em"
+          title="Open user guide"
+          >&#x2605; user guide</a
+        >
+      </h1>
+      <button class="btn" id="pasteBtn">&#x21BA; Load New Trace</button>
+      <button class="btn" id="prevBtn" disabled>&#x25C0; Prev</button>
+      <button class="btn primary" id="playBtn" disabled>&#x25B6; Play</button>
+      <button class="btn" id="nextBtn" disabled>Next &#x25B6;</button>
+      <input type="range" id="slider" min="0" value="0" disabled />
+      <span id="stepLabel">&mdash;</span>
+      <span id="speedLabel">Speed:</span>
+      <input type="range" id="speedSlider" min="1" max="10" value="5" style="width: 80px; accent-color: #cba6f7" />
+    </header>
+
+    <!-- -- Main -- -->
+    <main>
+      <div id="treePanel">
+        <div id="truncWarning">
+          <strong>&#x26A0; Input string needed for correct highlighting</strong>
+          The trace contains truncated phrases (the input is longer than 100 characters). Without the full input string,
+          character offsets cannot be resolved correctly. Click <em>Load New Trace</em> in the header and paste the full
+          input string into the second field.
+        </div>
+      </div>
+
+      <div id="sidebar">
+        <div class="sidebar-section">
+          <h2>Input String</h2>
+          <div id="inputDisplay"></div>
+        </div>
+        <div class="sidebar-section">
+          <h2>Current Node</h2>
+          <div id="nodeDetail"><span class="detail-label">&mdash;</span></div>
+        </div>
+        <div class="sidebar-section">
+          <h2>Progress</h2>
+          <div id="statsDisplay"></div>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <span
+        >Node colors: <span style="color: #a6e3a1">&#x25A0; match</span> &nbsp;
+        <span style="color: #f38ba8">&#x25A0; no-match</span> &nbsp;
+        <span style="color: #f9e2af">&#x25A0; empty</span> &nbsp;
+        <span style="color: #6c7086">&#x25A0; entering</span></span
+      >
+      <span style="margin-left: auto">Look-ahead nodes shown in <span style="color: #cba6f7">purple</span></span>
+    </footer>
+
+    <script>
+      // ─────────────────────────────────────────────
+      // PARSER  — convert raw trace text → step array
+      // ─────────────────────────────────────────────
+      const DEMO = `INPUT STRING
+aaabbbccc
+
+PARSE TREE NODE TRACE
+|-|[RNM(S)]->aaabbbccc
+.|-|[CAT]->aaabbbccc
+**|-|[AND]->aaabbbccc
+***|-|[CAT]->aaabbbccc
+****|-|[RNM(AB)]->aaabbbccc
+****~|-|[CAT]->aaabbbccc
+****~*|-|[RNM(a)]->aaabbbccc
+****~**|-|[TBS(a)]->aaabbbccc
+****~**|M|[TBS(a)]<-(0,1)|'a'
+****~*|M|[RNM(a)]<-(0,1)|'a'
+****~*|-|[REP(0,1)]->aabbbccc
+****~**|-|[RNM(AB)]->aabbbccc
+****~***|-|[CAT]->aabbbccc
+****~****|-|[RNM(a)]->aabbbccc
+****~****~|-|[TBS(a)]->aabbbccc
+****~****~|M|[TBS(a)]<-(1,1)|'a'
+****~****|M|[RNM(a)]<-(1,1)|'a'
+****~****|-|[REP(0,1)]->abbbccc
+****~****~|-|[RNM(AB)]->abbbccc
+****~****~*|-|[CAT]->abbbccc
+****~****~**|-|[RNM(a)]->abbbccc
+****~****~***|-|[TBS(a)]->abbbccc
+****~****~***|M|[TBS(a)]<-(2,1)|'a'
+****~****~**|M|[RNM(a)]<-(2,1)|'a'
+****~****~**|-|[REP(0,1)]->bbbccc
+****~****~***|-|[RNM(AB)]->bbbccc
+****~****~****|-|[CAT]->bbbccc
+****~****~****~|-|[RNM(a)]->bbbccc
+****~****~****~*|-|[TBS(a)]->bbbccc
+****~****~****~*|N|[TBS(a)]<-
+****~****~****~|N|[RNM(a)]<-
+****~****~****|N|[CAT]<-
+****~****~***|N|[RNM(AB)]<-
+****~****~**|E|[REP(0,1)]<-(3,0)|''
+****~****~**|-|[RNM(b)]->bbbccc
+****~****~***|-|[TBS(b)]->bbbccc
+****~****~***|M|[TBS(b)]<-(3,1)|'b'
+****~****~**|M|[RNM(b)]<-(3,1)|'b'
+****~****~*|M|[CAT]<-(2,2)|'ab'
+****~****~|M|[RNM(AB)]<-(2,2)|'ab'
+****~****|M|[REP(0,1)]<-(2,2)|'ab'
+****~****|-|[RNM(b)]->bbccc
+****~****~|-|[TBS(b)]->bbccc
+****~****~|M|[TBS(b)]<-(4,1)|'b'
+****~****|M|[RNM(b)]<-(4,1)|'b'
+****~***|M|[CAT]<-(1,4)|'aabb'
+****~**|M|[RNM(AB)]<-(1,4)|'aabb'
+****~*|M|[REP(0,1)]<-(1,4)|'aabb'
+****~*|-|[RNM(b)]->bccc
+****~**|-|[TBS(b)]->bccc
+****~**|M|[TBS(b)]<-(5,1)|'b'
+****~*|M|[RNM(b)]<-(5,1)|'b'
+****~|M|[CAT]<-(0,6)|'aaabbb'
+****|M|[RNM(AB)]<-(0,6)|'aaabbb'
+****|-|[NOT]->ccc
+****~|-|[RNM(b)]->ccc
+****~*|-|[TBS(b)]->ccc
+****~*|N|[TBS(b)]<-
+****~|N|[RNM(b)]<-
+****|E|[NOT]<-(6,0)|''
+***|M|[CAT]<-(0,6)|'aaabbb'
+**|E|[AND]<-(0,0)|''
+..|-|[REP(0,inf)]->aaabbbccc
+...|-|[RNM(a)]->aaabbbccc
+....|-|[TBS(a)]->aaabbbccc
+....|M|[TBS(a)]<-(0,1)|'a'
+...|M|[RNM(a)]<-(0,1)|'a'
+...|-|[RNM(a)]->aabbbccc
+....|-|[TBS(a)]->aabbbccc
+....|M|[TBS(a)]<-(1,1)|'a'
+...|M|[RNM(a)]<-(1,1)|'a'
+...|-|[RNM(a)]->abbbccc
+....|-|[TBS(a)]->abbbccc
+....|M|[TBS(a)]<-(2,1)|'a'
+...|M|[RNM(a)]<-(2,1)|'a'
+...|-|[RNM(a)]->bbbccc
+....|-|[TBS(a)]->bbbccc
+....|N|[TBS(a)]<-
+...|N|[RNM(a)]<-
+..|M|[REP(0,inf)]<-(0,3)|'aaa'
+..|-|[RNM(BC)]->bbbccc
+...|-|[CAT]->bbbccc
+....|-|[RNM(b)]->bbbccc
+....||-|[TBS(b)]->bbbccc
+....||M|[TBS(b)]<-(3,1)|'b'
+....|M|[RNM(b)]<-(3,1)|'b'
+....|-|[REP(0,1)]->bbccc
+....||-|[RNM(BC)]->bbccc
+....|.|-|[CAT]->bbccc
+....|..|-|[RNM(b)]->bbccc
+....|...|-|[TBS(b)]->bbccc
+....|...|M|[TBS(b)]<-(4,1)|'b'
+....|..|M|[RNM(b)]<-(4,1)|'b'
+....|..|-|[REP(0,1)]->bccc
+....|...|-|[RNM(BC)]->bccc
+....|....|-|[CAT]->bccc
+....|....||-|[RNM(b)]->bccc
+....|....|.|-|[TBS(b)]->bccc
+....|....|.|M|[TBS(b)]<-(5,1)|'b'
+....|....||M|[RNM(b)]<-(5,1)|'b'
+....|....||-|[REP(0,1)]->ccc
+....|....|.|-|[RNM(BC)]->ccc
+....|....|..|-|[CAT]->ccc
+....|....|...|-|[RNM(b)]->ccc
+....|....|....|-|[TBS(b)]->ccc
+....|....|....|N|[TBS(b)]<-
+....|....|...|N|[RNM(b)]<-
+....|....|..|N|[CAT]<-
+....|....|.|N|[RNM(BC)]<-
+....|....||E|[REP(0,1)]<-(6,0)|''
+....|....||-|[RNM(c)]->ccc
+....|....|.|-|[TBS(c)]->ccc
+....|....|.|M|[TBS(c)]<-(6,1)|'c'
+....|....||M|[RNM(c)]<-(6,1)|'c'
+....|....|M|[CAT]<-(5,2)|'bc'
+....|...|M|[RNM(BC)]<-(5,2)|'bc'
+....|..|M|[REP(0,1)]<-(5,2)|'bc'
+....|..|-|[RNM(c)]->cc
+....|...|-|[TBS(c)]->cc
+....|...|M|[TBS(c)]<-(7,1)|'c'
+....|..|M|[RNM(c)]<-(7,1)|'c'
+....|.|M|[CAT]<-(4,4)|'bbcc'
+....||M|[RNM(BC)]<-(4,4)|'bbcc'
+....|M|[REP(0,1)]<-(4,4)|'bbcc'
+....|-|[RNM(c)]->c
+....||-|[TBS(c)]->c
+....||M|[TBS(c)]<-(8,1)|'c'
+....|M|[RNM(c)]<-(8,1)|'c'
+...|M|[CAT]<-(3,6)|'bbbccc'
+..|M|[RNM(BC)]<-(3,6)|'bbbccc'
+**|-|[NOT]->
+***|-|[RNM(c)]->
+****|-|[TBS(c)]->
+****|N|[TBS(c)]<-
+***|N|[RNM(c)]<-
+**|E|[NOT]<-(9,0)|''
+*|M|[CAT]<-(0,9)|'aaabbbccc'
+|M|[RNM(S)]<-(0,9)|'aaabbbccc'`;
+
+      // ─── Split display() output into input string + trace text ───
+      // Format emitted by trace.display():
+      //   INPUT STRING\n<input>\n\nPARSE TREE NODE TRACE\n<trace lines>
+      function splitDisplayOutput(text) {
+        const inputMarker = 'INPUT STRING\n';
+        const traceMarker = 'PARSE TREE NODE TRACE\n';
+        const ti = text.indexOf(inputMarker);
+        const tt = text.indexOf(traceMarker);
+        if (ti !== -1 && tt !== -1 && tt > ti) {
+          // Strip the trailing blank line between input and trace marker
+          const inputStr = text.slice(ti + inputMarker.length, tt).replace(/[\r\n]+$/, '');
+          const traceText = text.slice(tt + traceMarker.length);
+          return { inputStr, traceText };
+        }
+        return { inputStr: null, traceText: text };
+      }
+
+      // ─── Parse a single trace line ───
+      function parseLine(line) {
+        if (!line.trim()) return null;
+        const m = line.match(/^(.*?)\|([-MNE])\|\[([^\]]+)\](->|<-)([\s\S]*?)\r?$/);
+        if (!m) return null;
+
+        const prefix = m[1];
+        const stateChar = m[2];
+        const op = m[3];
+        const arrow = m[4];
+        const phraseRaw = m[5];
+        const depth = prefix.length;
+        const lookAhead = /[*~]/.test(prefix);
+        const stateMap = { '-': 'enter', M: 'match', N: 'nomatch', E: 'empty' };
+
+        if (arrow === '->') {
+          return { depth, lookAhead, state: stateMap[stateChar], direction: 'down', op, phrase: phraseRaw, raw: line };
+        }
+
+        // UP line — check for new (offset,length)| prefix
+        // Use [\s\S]* instead of .* so phrases containing embedded newlines (from
+        // multi-line inputs where MAX_PHRASE truncation cuts mid-line) are matched.
+        const olMatch = phraseRaw.match(/^\((\d+),(\d+)\)\|([\s\S]*)$/);
+        if (olMatch) {
+          let phrase = olMatch[3].replace(/^'|'$/g, '');
+          if (phrase.endsWith('...')) phrase = phrase.slice(0, -3);
+          return {
+            depth,
+            lookAhead,
+            state: stateMap[stateChar],
+            direction: 'up',
+            op,
+            phrase,
+            matchedPhrase: phrase,
+            offset: +olMatch[1],
+            matchLen: +olMatch[2],
+            raw: line,
+          };
+        }
+        // Old-format fallback: no (o,l)| prefix
+        const phrase = phraseRaw.replace(/^'|'$/g, '');
+        return {
+          depth,
+          lookAhead,
+          state: stateMap[stateChar],
+          direction: 'up',
+          op,
+          phrase,
+          matchedPhrase: phrase,
+          raw: line,
+        };
+      }
+
+      function isTraceLine(line) {
+        return /^.*?\|[-MNE]\|\[/.test(line);
+      }
+
+      function parseTrace(text) {
+        const rawLines = text.split('\n').map((l) => l.replace(/\r$/, ''));
+        const joined = [];
+        for (const line of rawLines) {
+          if (!line) continue;
+          if (isTraceLine(line) || joined.length === 0) {
+            joined.push(line);
+          } else {
+            joined[joined.length - 1] += '\n' + line;
+          }
+        }
+        const steps = [];
+        for (const line of joined) {
+          const s = parseLine(line);
+          if (s) steps.push(s);
+        }
+        return steps;
+      }
+
+      // ─── Derive the full input string from the first DOWN step (old-format fallback) ───
+      function extractInput(steps) {
+        for (const s of steps) {
+          if (s.direction === 'down' && s.phrase) return s.phrase.replace(/\.\.\.$/g, '');
+        }
+        return '';
+      }
+
+      // ─── Resolve offsets for DOWN steps ───
+      // New-format UP steps already carry exact offset+matchLen from parseLine.
+      // DOWN steps carry the remaining-input phrase; we place them via indexOf.
+      function resolveOffsets(steps, input) {
+        let lastOffset = 0;
+        for (const s of steps) {
+          if (s.direction === 'down') {
+            const truncated = s.phrase.endsWith('...');
+            const stripped = truncated ? s.phrase.slice(0, -3) : s.phrase;
+            let idx = input.indexOf(stripped, lastOffset);
+            if (idx < 0) idx = input.indexOf(stripped, 0);
+            if (idx < 0 && !truncated) idx = input.length - stripped.length;
+            s.offset = idx >= 0 ? idx : lastOffset;
+            lastOffset = s.offset;
+            s.window = stripped;
+          }
+          // UP steps: offset/matchLen already set by parseLine (new format),
+          // or undefined (old format — handled in goToStep).
+          // Advance lastOffset past the end of a match so subsequent DOWN steps
+          // search forward from there rather than from a stale position.
+          if (s.direction === 'up' && s.state === 'match' && s.offset !== undefined) {
+            const end = s.offset + (s.matchLen || 0);
+            if (end > lastOffset) lastOffset = end;
+          }
+        }
+      }
+
+      // ─────────────────────────────────────────────
+      // UI STATE
+      // ─────────────────────────────────────────────
+      let steps = [];
+      let currentStep = 0;
+      let inputStr = '';
+      let playInterval = null;
+
+      function buildUI(traceText) {
+        const split = splitDisplayOutput(traceText.trim());
+        steps = parseTrace(split.traceText);
+        if (!steps.length) {
+          alert('No trace steps found. Check the format.');
+          return;
+        }
+        inputStr = split.inputStr ?? extractInput(steps);
+        resolveOffsets(steps, inputStr);
+
+        document.getElementById('truncWarning').style.display = 'none';
+        currentStep = 0;
+        renderTree();
+        renderInputString();
+
+        const slider = document.getElementById('slider');
+        slider.max = steps.length - 1;
+        slider.value = 0;
+        slider.disabled = false;
+        document.getElementById('prevBtn').disabled = false;
+        document.getElementById('nextBtn').disabled = false;
+        document.getElementById('playBtn').disabled = false;
+        goToStep(0);
+      }
+
+      // ─── Render the tree ───
+      function renderTree() {
+        const panel = document.getElementById('treePanel');
+        const existingWarning = document.getElementById('truncWarning');
+        panel.innerHTML = '';
+        if (existingWarning) panel.appendChild(existingWarning);
+
+        for (let i = 0; i < steps.length; i++) {
+          const s = steps[i];
+          const row = document.createElement('div');
+          row.className = 'node future';
+          row.style.setProperty('--depth', s.depth);
+          row.dataset.depth = s.depth;
+          row.dataset.step = i;
+          row.id = `step-${i}`;
+
+          const icon = document.createElement('div');
+          icon.className = 'node-icon';
+          if (s.direction === 'down') {
+            icon.className += ' icon-enter';
+            icon.textContent = '↓';
+          } else if (s.state === 'match') {
+            icon.className += ' icon-match';
+            icon.textContent = 'M';
+          } else if (s.state === 'nomatch') {
+            icon.className += ' icon-nomatch';
+            icon.textContent = 'N';
+          } else {
+            icon.className += ' icon-empty';
+            icon.textContent = 'E';
+          }
+
+          const opEl = document.createElement('span');
+          opEl.className = 'node-op';
+          if (s.lookAhead) opEl.className += ' lookahead';
+          else if (s.op.startsWith('TBS') || s.op.startsWith('TLS') || s.op.startsWith('TRG'))
+            opEl.className += ' terminal';
+          opEl.textContent = `[${s.op}]`;
+
+          const arrowEl = document.createElement('span');
+          arrowEl.className = 'node-arrow';
+          arrowEl.textContent = s.direction === 'down' ? ' → ' : ' ← ';
+
+          const phraseEl = document.createElement('span');
+          phraseEl.className = 'node-phrase';
+          if (s.direction === 'down') {
+            phraseEl.textContent = s.phrase ? `"${s.phrase.slice(0, 20)}${s.phrase.length > 20 ? '…' : ''}"` : '(end)';
+          } else {
+            phraseEl.textContent = s.state === 'match' ? `'${s.matchedPhrase}'` : s.state === 'empty' ? 'ε' : '✗';
+          }
+
+          row.appendChild(icon);
+          row.appendChild(opEl);
+          row.appendChild(arrowEl);
+          row.appendChild(phraseEl);
+          row.addEventListener('click', () => goToStep(i));
+          panel.appendChild(row);
+        }
+      }
+
+      // ─── Render input string characters ───
+      function renderInputString() {
+        const el = document.getElementById('inputDisplay');
+        el.innerHTML = '';
+        if (!inputStr) {
+          el.textContent = '(empty)';
+          return;
+        }
+        for (let i = 0; i < inputStr.length; i++) {
+          const ch = inputStr[i];
+          const span = document.createElement('span');
+          span.className = 'ch';
+          span.dataset.idx = i;
+          if (ch === '\n') {
+            span.title = 'LF (\\n)';
+            span.textContent = '↵';
+            span.style.color = '#6c7086';
+            span.style.fontSize = '0.7em';
+            el.appendChild(span);
+            const flexBr = document.createElement('span');
+            flexBr.style.width = '100%';
+            flexBr.style.height = '0';
+            el.appendChild(flexBr);
+          } else if (ch === '\r') {
+            span.title = 'CR (\\r)';
+            span.textContent = '↩';
+            span.style.color = '#6c7086';
+            span.style.fontSize = '0.7em';
+            el.appendChild(span);
+          } else {
+            span.textContent = ch;
+            el.appendChild(span);
+          }
+        }
+      }
+
+      // ─── Go to a specific step ───
+      function goToStep(n) {
+        if (!steps.length) return;
+        n = Math.max(0, Math.min(steps.length - 1, n));
+        currentStep = n;
+
+        const rows = document.querySelectorAll('.node');
+        rows.forEach((row, i) => {
+          row.classList.toggle('future', i > n);
+          row.classList.toggle('active', i === n);
+        });
+
+        const active = document.getElementById(`step-${n}`);
+        if (active) active.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+
+        const s = steps[n];
+        document.querySelectorAll('.ch').forEach((ch) => {
+          ch.className = 'ch';
+        });
+
+        if (s) {
+          if (s.direction === 'down') {
+            const offset = s.offset;
+            const windowLen = s.window ? s.window.length : 0;
+            for (let i = offset; i < offset + windowLen && i < inputStr.length; i++) {
+              const ch = document.querySelector(`.ch[data-idx="${i}"]`);
+              if (ch) ch.classList.add(i === offset ? 'cursor' : 'in-window');
+            }
+            const inputDisplay = document.getElementById('inputDisplay');
+            const cursorCh = inputDisplay.querySelector('.ch.cursor');
+            if (cursorCh) {
+              const cr = cursorCh.getBoundingClientRect();
+              const dr = inputDisplay.getBoundingClientRect();
+              if (cr.bottom > dr.bottom) inputDisplay.scrollTop += cr.bottom - dr.bottom + 4;
+              else if (cr.top < dr.top) inputDisplay.scrollTop -= dr.top - cr.top + 4;
+            }
+          } else if (s.state === 'match' && s.matchedPhrase) {
+            // New format: offset and matchLen come directly from the UP step.
+            // Old format: walk back to the matching DOWN step for the offset.
+            let offset = s.offset;
+            if (offset === undefined) {
+              offset = 0;
+              for (let j = n - 1; j >= 0; j--) {
+                if (steps[j].direction === 'down' && steps[j].depth === s.depth && steps[j].op === s.op) {
+                  offset = steps[j].offset;
+                  break;
+                }
+              }
+            }
+            const matchLen = s.matchLen !== undefined ? s.matchLen : s.matchedPhrase.length;
+            for (let i = offset; i < offset + matchLen && i < inputStr.length; i++) {
+              const ch = document.querySelector(`.ch[data-idx="${i}"]`);
+              if (ch) ch.classList.add('matched');
+            }
+            // Scroll first matched character into view within #inputDisplay
+            const inputDisplay = document.getElementById('inputDisplay');
+            const firstMatch = inputDisplay.querySelector('.ch.matched');
+            if (firstMatch) {
+              const cr = firstMatch.getBoundingClientRect();
+              const dr = inputDisplay.getBoundingClientRect();
+              if (cr.bottom > dr.bottom) inputDisplay.scrollTop += cr.bottom - dr.bottom + 4;
+              else if (cr.top < dr.top) inputDisplay.scrollTop -= dr.top - cr.top + 4;
+            }
+          } else if (s.state === 'nomatch') {
+            // Highlight the character at the position where the match attempt started.
+            let offset = s.offset;
+            if (offset === undefined) {
+              for (let j = n - 1; j >= 0; j--) {
+                if (steps[j].direction === 'down' && steps[j].depth === s.depth && steps[j].op === s.op) {
+                  offset = steps[j].offset;
+                  break;
+                }
+              }
+            }
+            if (offset !== undefined && offset < inputStr.length) {
+              const ch = document.querySelector(`.ch[data-idx="${offset}"]`);
+              if (ch) ch.classList.add('nomatch');
+              // Scroll into view within #inputDisplay
+              const inputDisplay = document.getElementById('inputDisplay');
+              const nomatchCh = inputDisplay.querySelector('.ch.nomatch');
+              if (nomatchCh) {
+                const cr = nomatchCh.getBoundingClientRect();
+                const dr = inputDisplay.getBoundingClientRect();
+                if (cr.bottom > dr.bottom) inputDisplay.scrollTop += cr.bottom - dr.bottom + 4;
+                else if (cr.top < dr.top) inputDisplay.scrollTop -= dr.top - cr.top + 4;
+              }
+            }
+          }
+        }
+
+        const detail = document.getElementById('nodeDetail');
+        if (s) {
+          detail.innerHTML = `
+      <span class="detail-label">Op</span><span class="detail-value">${s.op}</span>
+      <span class="detail-label">State</span><span class="detail-value">${s.state}</span>
+      <span class="detail-label">Direction</span><span class="detail-value">${s.direction}</span>
+      <span class="detail-label">Depth</span><span class="detail-value">${s.depth}</span>
+      <span class="detail-label">Look-ahead</span><span class="detail-value">${s.lookAhead ? 'yes' : 'no'}</span>
+      <span class="detail-label">Phrase</span><span class="detail-value">${escHtml(
+        s.direction === 'down' ? s.phrase : s.matchedPhrase ?? ''
+      )}</span>
+    `;
+        }
+
+        let matches = 0,
+          nomatches = 0,
+          empties = 0;
+        for (let i = 0; i <= n; i++) {
+          if (steps[i].state === 'match') matches++;
+          else if (steps[i].state === 'nomatch') nomatches++;
+          else if (steps[i].state === 'empty') empties++;
+        }
+        document.getElementById('statsDisplay').innerHTML = `
+    <span class="stat-label">Step</span><span class="stat-value">${n + 1} / ${steps.length}</span>
+    <span class="stat-label">Matches</span><span class="stat-value" style="color:#a6e3a1">${matches}</span>
+    <span class="stat-label">No-match</span><span class="stat-value" style="color:#f38ba8">${nomatches}</span>
+    <span class="stat-label">Empty</span><span class="stat-value" style="color:#f9e2af">${empties}</span>
+  `;
+
+        document.getElementById('slider').value = n;
+        document.getElementById('stepLabel').textContent = `Step ${n + 1} / ${steps.length}`;
+        document.getElementById('prevBtn').disabled = n === 0;
+        document.getElementById('nextBtn').disabled = n === steps.length - 1;
+      }
+
+      function escHtml(s) {
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
+
+      // ─── Controls ───
+      document.getElementById('prevBtn').addEventListener('click', () => goToStep(currentStep - 1));
+      document.getElementById('nextBtn').addEventListener('click', () => goToStep(currentStep + 1));
+      document.getElementById('slider').addEventListener('input', (e) => goToStep(+e.target.value));
+
+      document.getElementById('playBtn').addEventListener('click', () => {
+        if (playInterval) {
+          clearInterval(playInterval);
+          playInterval = null;
+          document.getElementById('playBtn').textContent = '▶ Play';
+        } else {
+          document.getElementById('playBtn').textContent = '⏸ Pause';
+          const speed = +document.getElementById('speedSlider').value;
+          const delay = Math.round(1200 / speed);
+          playInterval = setInterval(() => {
+            if (currentStep >= steps.length - 1) {
+              clearInterval(playInterval);
+              playInterval = null;
+              document.getElementById('playBtn').textContent = '▶ Play';
+            } else {
+              goToStep(currentStep + 1);
+            }
+          }, delay);
+        }
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (document.getElementById('overlay').classList.contains('hidden')) {
+          if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+            e.preventDefault();
+            goToStep(currentStep + 1);
+          }
+          if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            goToStep(currentStep - 1);
+          }
+          if (e.key === ' ') {
+            e.preventDefault();
+            document.getElementById('playBtn').click();
+          }
+        }
+      });
+
+      // ─── Overlay ───
+      document.getElementById('loadBtn').addEventListener('click', () => {
+        const text = document.getElementById('traceInput').value;
+        if (!text.trim()) return;
+        buildUI(text);
+        document.getElementById('overlay').classList.add('hidden');
+      });
+
+      document.getElementById('demoBtn').addEventListener('click', () => {
+        buildUI(DEMO);
+        document.getElementById('overlay').classList.add('hidden');
+      });
+
+      document.getElementById('pasteBtn').addEventListener('click', () => {
+        document.getElementById('traceInput').value = '';
+        document.getElementById('overlay').classList.remove('hidden');
+      });
+
+      document.getElementById('traceInput').value = '';
+    </script>
+  </body>
+</html>

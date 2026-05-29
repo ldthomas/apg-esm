@@ -1,0 +1,13 @@
+.*
+!.gitignore
+!.eslintrc.json
+!.prettierrc
+*~
+*.log
+*.out
+*.zip
+*.tgz
+**node_modules/
+**/coverage/
+**output/
+**documentation/

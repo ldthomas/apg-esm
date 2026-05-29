@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>APG — SABNF Grammar Reference</title>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #f0f2f5;
+        color: #1a1a2e;
+        min-height: 100vh;
+      }
+
+      /* ── Header ─────────────────────────────── */
+      header {
+        background: #1a1a2e;
+        color: #fff;
+        padding: 14px 24px;
+        font-size: 1.2rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      header .title {
+        text-align: center;
+      }
+
+      /* ── Layout ─────────────────────────────── */
+      main {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      /* ── Card ───────────────────────────────── */
+      .card {
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.09);
+        overflow: hidden;
+      }
+      .card-title {
+        background: #e8eaf6;
+        padding: 10px 20px;
+        font-size: 0.9375rem;
+        font-weight: 600;
+        color: #283593;
+        border-bottom: 1px solid #c5cae9;
+      }
+      .card-body {
+        padding: 24px 28px;
+      }
+
+      /* ── Prose ──────────────────────────────── */
+      .prose h1 {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: #1a1a2e;
+        margin-bottom: 16px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #c5cae9;
+      }
+      .prose h2 {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #283593;
+        margin-top: 32px;
+        margin-bottom: 12px;
+        padding-bottom: 6px;
+        border-bottom: 1px solid #e8eaf6;
+      }
+      .prose h3 {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #3949ab;
+        margin-top: 20px;
+        margin-bottom: 8px;
+      }
+      .prose p {
+        font-size: 0.9375rem;
+        line-height: 1.7;
+        color: #222;
+        margin-bottom: 12px;
+      }
+      .prose strong {
+        color: #1a1a2e;
+      }
+      .prose a {
+        color: #1565c0;
+        text-decoration: none;
+      }
+      .prose a:hover {
+        text-decoration: underline;
+      }
+      .prose hr {
+        border: none;
+        border-top: 1px solid #e0e0e0;
+        margin: 28px 0;
+      }
+      .prose ul {
+        padding-left: 22px;
+        margin-bottom: 12px;
+      }
+      .prose li {
+        font-size: 0.9375rem;
+        line-height: 1.7;
+        color: #222;
+        margin-bottom: 6px;
+      }
+      .prose pre {
+        background: #f5f5f5;
+        border: 1px solid #e0e0e0;
+        border-radius: 4px;
+        padding: 12px 14px;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 0.8125rem;
+        line-height: 1.55;
+        white-space: pre;
+        overflow-x: auto;
+        margin-bottom: 14px;
+        color: #222;
+      }
+      .prose code {
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 0.875em;
+        background: #e8eaf6;
+        color: #283593;
+        padding: 1px 5px;
+        border-radius: 3px;
+      }
+      .prose pre code {
+        background: none;
+        color: inherit;
+        padding: 0;
+        border-radius: 0;
+        font-size: inherit;
+      }
+      .prose sup {
+        font-size: 0.75em;
+        vertical-align: super;
+      }
+
+      /* ── Tables ─────────────────────────────── */
+      .prose table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.875rem;
+        margin-bottom: 16px;
+      }
+      .prose thead tr {
+        background: #e8eaf6;
+      }
+      .prose th {
+        text-align: left;
+        padding: 8px 12px;
+        font-weight: 600;
+        color: #283593;
+        border: 1px solid #c5cae9;
+      }
+      .prose td {
+        padding: 7px 12px;
+        border: 1px solid #e0e0e0;
+        color: #222;
+      }
+      .prose tbody tr:nth-child(even) {
+        background: #f5f5f5;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <span class="title">SABNF Grammar Reference</span>
+    </header>
+
+    <main>
+      <div class="card">
+        <div class="card-body">
+          <article class="prose">
+            <h2 id="abnf">ABNF</h2>
+            <p>
+              <a href="https://tools.ietf.org/html/rfc5234.html">ABNF</a> is a syntax to describe phrases, a phrase
+              being any string of non-negative integers. Because the integers often represent
+              <a href="http://www.asciitable.com/">ASCII</a> character codes there are special ABNF features to
+              accommodate an easy description of ASCII strings. Consequently the integers are often referred to here as
+              character codes. However, the meaning and range of the string integers are entirely up to the user. The
+              complete ABNF description of a phrase is called a grammar and the terms “grammar” and “ABNF syntax” will
+              be used synonymously here.
+            </p>
+            <p>
+              Following is a summary of the salient features of ABNF. If there are any discrepancies with
+              <a href="https://tools.ietf.org/html/rfc5234.html">RFC 5234</a>, the RFC naturally prevails.
+            </p>
+            <h3 id="rules">Rules</h3>
+            <p>
+              Phrases are described with named rules. A rule name is alphanumeric with hyphens allowed after the first
+              character. Rule names are case insensitive. A rule definition has the form:
+            </p>
+            <pre><code>name = elements CRLF</code></pre>
+            <p>
+              where the equal sign, <code>=</code>, separates the name from the phrase definition. Elements are made up
+              of terminals, non-terminals and other rule names, as described below. Each rule must end with a carriage
+              return/line feed combination, CRLF. A rule definition may be continued with continuation lines, each of
+              which begins with a space or tab.
+            </p>
+            <h3 id="terminals">Terminals</h3>
+            <p>
+              Rules resolve into a string of terminal character codes (string integers). ABNF provides several means of
+              representing terminal characters and strings of characters explicitly.
+            </p>
+            <p><strong>single characters</strong></p>
+            <pre><code>%d32     - represents the decimal integer character code 32
+%x20     - represents the hexidecimal integer character code 20 or decimal 32
+%b100000 - represents the binary integer character code 100000 or decimal 32</code></pre>
+            <p><strong>strings of characters</strong></p>
+            <pre><code>%d13.10     - represents the line-ending character string CRLF.
+%x0D.0A     - represents the line-ending character string CRLF.
+%b1101.1010 - represents the line-ending character string CRLF.</code></pre>
+            <p><strong>range of characters</strong></p>
+            <pre><code>%d48-57         - represents any single character code in the decimal range 48 through 57
+                  that is, any ASCII digit 0, 1, 2, 3 ,4, 5, 6, 7, 8 or 9
+%x30-39         - represents any single character code in the hexidecimal range 30 through 39
+                  (also any ASCII digit)
+%b110000-111001 - represents any single character code in the binary range 110000 through 111001
+                  (also any ASCII digit)</code></pre>
+            <p><strong>literal strings of characters</strong></p>
+            <p>
+              Because of their frequent use, there is also a notation for literal strings of printing ASCII characters.
+            </p>
+            <pre><code>&quot;ab&quot;   - represents the case-insensitive string &quot;ab&quot; and would match
+         %d97.98, %d65.98, %d97.66 or %d65.66 (&quot;ab&quot;, &quot;Ab&quot;, &quot;aB&quot; or &quot;AB&quot;)
+%i&quot;ab&quot; - is a case-insensitive literal string (identical to &quot;ab&quot;)
+%s&quot;ab&quot; - is a case-sensitive literal string (identical to %d97.98)</code></pre>
+            <p>
+              The <code>%i</code> and <code>%s</code> prefixes are defined in
+              <a href="https://www.rfc-editor.org/rfc/rfc7405">RFC 7405</a>.
+            </p>
+            <p>Tab characters, 0x09, are not allowed in literal strings.</p>
+            <p><strong>prose values</strong></p>
+            <p>
+              When all else fails, ABNF provides a means for the grammar’s author to simply provide a prose explanation
+              of the phrase in the form of a spoken, as opposed to formal, language. The notation is informative and the
+              parser generator will recognize it as valid ABNF. However, since there are no formal specifics, the
+              generator will halt without generating a parser.
+            </p>
+            <pre><code>&lt;phrase description in prose&gt;</code></pre>
+            <p>Tab characters, 0x09, are not allowed in the prose values.</p>
+            <h3 id="non-terminals">Non-Terminals</h3>
+            <p><strong>concatenation</strong></p>
+            <p>
+              A space between elements in a rule definition represents a concatenation of the two elements. For example,
+              consider the two rules,
+            </p>
+            <pre><code>AB1 = &quot;a&quot; &quot;b&quot; CRLF
+AB2 = &quot;ab&quot; CRLF</code></pre>
+            <p>
+              The space between the two elements <code>"a"</code> and <code>"b"</code> acts as a concatenation operator.
+              The effect in this case is that rule <code>AB1</code> defines the same phrase as rule <code>AB2</code>.
+            </p>
+            <p><strong>alternatives</strong></p>
+            <p>The forward slash, <code>/</code>, is the alternative operator. The rule</p>
+            <pre><code>AB = &quot;a&quot; / &quot;b&quot; CRLF</code></pre>
+            <p>would match either the phrase <code>a</code> or the phrase <code>b</code>.</p>
+            <p><strong>incremental alternatives</strong></p>
+            <p>
+              While not a new operation, incremental alternatives are a sometimes-convenient means of adding
+              alternatives to a rule.
+            </p>
+            <pre><code>alt1 = &quot;a&quot; / &quot;b&quot; / &quot;c&quot; CRLF
+alt2 = &quot;a&quot; CRLF
+      / &quot;b&quot; CRLF
+      / &quot;c&quot; CRLF
+alt3 = &quot;a&quot; / &quot;b&quot; CRLF
+alt3 =/ &quot;c&quot; CRLF</code></pre>
+            <p>
+              Rules <code>alt1</code>, <code>alt2</code> and <code>alt3</code> have identical definitions. The
+              incremental alternative, <code>=/</code>, allows for adding additional alternatives to a rule at a later
+              date. As seen in <code>alt2</code>, the same affect can be achieved with line continuations. However, in
+              some cases, it may be convenient or even essential to add additional alternatives later in the grammar.
+              For example, if the grammar is broken into two or more files. In such a case, line continuations would not
+              be possible and the incremental alternative becomes an essential syntactic addition.
+            </p>
+            <p><strong>repetitions</strong></p>
+            <p>
+              An element modifier of the general form <code>n*m (0 &lt;= n &lt;= m)</code> is used to indicate a
+              repetition of the element a minimum of <code>n</code> times and a maximum of <code>m</code> times. For
+              example, the grammar
+            </p>
+            <pre><code>number = 2*3digit CRLF
+digit  = %d48-57  CRLF</code></pre>
+            <p>
+              would define a phrase that could be any number with 2 or 3 digits. There are a number of shorthand
+              variations of the repetition operator.
+            </p>
+            <pre><code> * = 0*infinity (zero or more repetitions)
+n* = n*infinity (n or more repetitions)
+*m = 0*m        (zero to m repetitions)
+n  = n*n        (exactly n repetitions)</code></pre>
+            <h3 id="groups">Groups</h3>
+            <p>
+              Elements may be grouped with enclosing parentheses. Grouped elements are then treated as a single element
+              within the full context of the defining rule. Consider,
+            </p>
+            <pre><code>phrase1 = elem (foo / bar) blat CRLF
+phrase2 = elem foo / bar blat CRLF
+phrase3 = (elem foo) / (bar blat) CRLF</code></pre>
+            <p>
+              <code>phrase1</code> matches <code>elem foo blat</code> or <code>elem bar blat</code>, whereas
+              <code>phrase2</code> matches <code>elem foo</code> or <code>bar blat</code>. A word of caution here.
+              Concatenation has presidence over (tighter binding than) alternatives so that <code>phrase2</code> is the
+              same as <code>phrase3</code> and not <code>phrase1</code>. It can be confusing. Use parentheses liberally
+              to keep the grammar meaning clear.
+            </p>
+            <p>Another useful way to think of groups is as anonymous rules. That is, given</p>
+            <pre><code>phrase1 = elem (foo / bar) blat CRLF
+phrase2 = elem anon blat CRLF
+anon    = foo /bar CRLF</code></pre>
+            <p>
+              phrase1 and phrase2 are identical. Only phrase2 utilizes the explicit rule <code>anon</code> for the
+              parenthesized grouping. In phrase1, the parenthesized grouping anonymously defines the same rule as
+              <code>anon</code>.
+            </p>
+            <h3 id="optional-groups">Optional Groups</h3>
+            <p>Elements grouped with square brackets, <code>[]</code>, are optional groups. Consider,</p>
+            <pre><code>phrase1 = [elem foo] bar blat CRLF
+phrase2 = 0*1(elem foo) bar blat CRLF</code></pre>
+            <p>
+              Both phrases are identical and will match either <code>elem foo bar blat</code> or <code>bar blat</code>.
+            </p>
+            <h3 id="comments">Comments</h3>
+            <p>
+              Comments begin with a semicolon, <code>;</code>, and continue to the end of the current line. For example,
+              in the following rule definition, everything from the semicolon to CRLF is considered white space.
+            </p>
+            <pre><code>phrase = &quot;abc&quot;; any comment can go here   CRLF</code></pre>
+            <p>
+              In this implementation empty lines and comment-only lines are accepted as white space, but any line
+              beginning with one or more space/tab characters and having text not beginning with a semicolon will be
+              rejected as an ABNF syntax error. Consider the lines,
+            </p>
+            <pre><code>1:CRLF
+2:    CRLF
+3:;comment CRLF
+4:     ; comment CRLF
+5:   comment CRLF</code></pre>
+            <p>
+              Lines <code>1:</code> through <code>4:</code> are valid blank lines. Line <code>5:</code> would be
+              regarded as a syntax error.
+            </p>
+            <h3 id="bringing-it-all-together-now">Bringing it all together now</h3>
+            <p>
+              Here is an example of a complete ABNF grammar representing the general definition of a floating point
+              number.
+            </p>
+            <pre><code>float    = [sign] decimal [exponent]
+sign     = &quot;+&quot; / &quot;-&quot;
+decimal  = integer [dot [fraction]]
+           / dot fraction
+integer  = 1*%d48-57
+dot      = &quot;.&quot;
+fraction = 1*%d48-57
+exponent = &quot;e&quot; [esign] exp
+esign    = &quot;+&quot; / &quot;-&quot;
+exp      = 1*%d48-57</code></pre>
+            <hr />
+            <h2 id="restrictions">Restrictions</h2>
+            <p>
+              <code>APG</code> imposes several restrictions and changes to the strict ABNF described above. These are
+              minor except for the disambiguation rules.
+            </p>
+            <p><strong>Indentations</strong></p>
+            <p>
+              RFC 5234 specifies that a rule may begin in any column, so long as all rules begin in the same column.
+              This implementation restricts the rules to the first column.
+            </p>
+            <p><strong>Line Endings</strong></p>
+            <p>
+              RFC 5234 specifies that a line ending must be the carriage return/line feed pair, CRLF. This
+              implementation relaxes that and accepts CRLF, LF or CR as a valid line ending. However, the last line must
+              have a line ending or a fatal error is generated.
+              <em
+                >(Forgetting a line ending on the last line is a common and annoying error, but keeping the line ending
+                requirement has been a conscious design decision.)</em
+              >
+            </p>
+            <p><strong>Case-Sensitive Strings</strong></p>
+            <p>This implementation allows case-sensitive strings to be defined with single quotes.</p>
+            <pre><code>phrase1 = &#39;abc&#39;      CRLF
+phrase2 = %s&quot;abc&quot;    CRLF
+phrase3 = %d97.98.99 CRLF</code></pre>
+            <p>
+              All three of the above phrases define the case-sensitive string <code>abc</code>. The single-quote
+              notation for this was introduced in 2011 prior to publication of RFC 7405. The
+              <code>APG</code> single-quote notation is kept for backward compatibility.
+            </p>
+            <p><strong>Empty Strings</strong></p>
+            <p>
+              Some rules may accept empty strings. That is, they match a string with 0 characters. To represent an empty
+              string explicitly, three possibilities exist.
+            </p>
+            <pre><code>empty-string = 0*0element ; zero repetitions
+empty-string = &#39;&#39;         ; case-sensitive empty literal string
+empty-string = &quot;&quot;         ; empty literal string</code></pre>
+            <p>
+              For efficient and consistent implementation, only the empty literal string form is allowed (either prefix,
+              <code>%s</code> or <code>%i</code> is OK). Either of the first two forms will result in a generator error.
+            </p>
+            <p><strong>Disambiguation</strong></p>
+            <p>
+              The alternative operation allows the parser to follow multiple pathways through the parse tree. It can be
+              and often is the case that more than one of these pathways will lead to a successful phrase match. The
+              question of what to do with multiple matches was answered early in the development of
+              <code>APG</code> with the simple rule of always trying the alternatives left to right as they appear in
+              the grammar and then accepting the first to succeed. This “first success” disambiguation rule may break a
+              strictly context-free aspect of ABNF, but knowing how the ambiguity is going to be handled can, in many
+              cases, ease the grammar design process.
+            </p>
+            <p>Related to disambiguation is the question of how many repetitions to accept. Consider the grammar</p>
+            <pre><code>reps = *&quot;a&quot; &quot;a&quot; CRLF</code></pre>
+            <p>
+              A strictly context-free parser should accept any string a<sup>n</sup>, n&gt;0. But in general this
+              requires some trial and error with back tracking. Instead, repetitions in <code>APG</code> always accept
+              the longest match possible. That would mean that <code>APG</code> would fail to match the example above.
+              However, a quick look shows that a simple rewrite would fix the problem.
+            </p>
+            <pre><code>reps = 1*&quot;a&quot; CRLF</code></pre>
+            <p>
+              Longest-match repetitions rarely lead to a serious problem. Again, knowing in advance exactly how the
+              parser will handle repetitions allows for efficient grammar design.
+            </p>
+            <hr />
+            <h2 id="abnf-as-a-tree-of-node-operations">ABNF as a Tree of Node Operations</h2>
+            <p>
+              <code>APG</code> was originally developed with the recognition that the ABNF syntax elements defined a
+              tree of node operations. The node operators are defined as:
+            </p>
+            <ul>
+              <li>
+                <strong>TLS</strong> - The TLS, or terminal literal string, operation is simply to attempt a match of
+                the literal string characters to the current input string. The match is done in a case-insensitive
+                manner for ASCII alphabetic characters.
+              </li>
+              <li>
+                <strong>TBS</strong> - The TBS, or terminal binary string, operation. Same as TLS except that the
+                characters are matched character-for-character with no special ASCII considerations.
+              </li>
+              <li>
+                <strong>TRG</strong> - The TRG, or terminal range, operation matches, or captures, any character in the
+                grammar-defined range.
+              </li>
+              <li>
+                <strong>ALT</strong> - The ALT node provides a list of alternate paths for the parser, one for each
+                child node.
+              </li>
+              <li><strong>CAT</strong> - The CAT node dictates concatenating the results of all child nodes.</li>
+              <li>
+                <strong>REP</strong> - The REP node, within grammar-defined limits, dictates that the child node be
+                repeated, the results of each repetition being concatenated to the previous result.
+              </li>
+              <li>
+                <strong>RNM</strong> - The RNM, or rule, node operation is to substitute it with the node operations
+                defined by the named rule.
+              </li>
+            </ul>
+            <p>Consider the grammar:</p>
+            <pre><code>S = (&quot;a&quot; &quot;b&quot;) / 1*%d48-57 CRLF</code></pre>
+            <p>This defines the tree:</p>
+            <pre><code>                 RNM(S)
+                  |
+                 ALT
+                  |
+            --------------
+            |            |
+           CAT          REP(1, infinity)
+            |            |
+       -----------      TRG[48-57]
+       |         |
+    TLS(&quot;a&quot;)    TLS(&quot;b&quot;)</code></pre>
+            <p>
+              The <code>APG</code> generator builds such a tree from the ABNF grammar and the parser parses it with a
+              depth-first (recursive-descent) traversal of the tree.
+            </p>
+            <hr />
+            <h2 id="superset-abnf-sabnf">Superset ABNF (SABNF)</h2>
+            <p>
+              In addition to the seven node operations defined by ABNF, <code>APG</code> recognizes an additional three
+              operations. Since these do not alter the original set of seven operations in any way, the 10-node set can
+              be considered as a super set of ABNF. Hence the designation <strong>S</strong>uperset
+              <strong>A</strong>ugmented <strong>B</strong>ackus-<strong>N</strong>aur <strong>F</strong>orm, or SABNF.
+            </p>
+            <h3 id="user-defined-terminals">User-Defined Terminals</h3>
+            <p>
+              SABNF introduces User-Defined Terminals (UDT). These allow the parser to accept any phrase as a
+              handwritten code snippet. The syntax is,
+            </p>
+            <pre><code>phrase1 = u_non-empty CRLF
+phrase2 = e_possibly-empty CRLF</code></pre>
+            <p>
+              UDTs begin with <code>u_</code> or <code>e_</code>. With the exception of the underscore, UDT names follow
+              the same conventions as rule names. The underscore is not used in the ABNF syntax, so the generator can
+              easily distinguish between UDT names and rule names. The difference between the two forms is that a UDT
+              beginning with <code>u_</code> may not return an empty phrase. If it does the parser will throw an
+              exception. Only if the UDT name begins with <code>e_</code> is an empty phrase return accepted. The
+              difference has to do with the rule attributes and will not be discussed here further.
+            </p>
+            <p>
+              UDTs allow the parser to accept phrases that can’t be expressed as ABNF, with the drawback that it then
+              becomes difficult or impossible to define the language that the grammar accepts. Where UDTs really shine,
+              though, is with phrases that are possible but complicated to describe with ABNF. UDTs can “cut the Gordian
+              Knot” in these situations, solving the problem easily and with much greater parsing efficiency and speed.
+            </p>
+            <p>
+              Note that even though UDTs are terminal phrases, they are also named phrases and share some named-phrase
+              qualities with rules. Especially, they may be included in the nodes of the Abstract Syntax Tree often
+              required for input string translations.
+            </p>
+            <h3 id="look-ahead">Look Ahead</h3>
+            <p>
+              The look ahead operators are modifiers like repetitions. They are left of and adjacent to the phrase that
+              they modify.
+            </p>
+            <pre><code>phrase1 = &amp;&quot;+&quot; number CRLF
+phrase2 = !&quot;+&quot; number CRLF
+number  = [&quot;+&quot; / &quot;-&quot;] 1*%d48-75 CRLF</code></pre>
+            <p>
+              <code>phrase1</code> uses the positive look ahead operator. If the input string begins with a
+              <code>"+"</code> then <code>&amp;"+"</code> returns the empty state, backtracks to the
+              <code>+</code> character and parsing of the <code>number</code> rule continues. Otherwise,
+              <code>&amp;"+"</code> returns failure and <code>phrase1</code> fails to find a match. That is,
+              <code>phrase1</code> accepts only numbers that begin with <code>+</code>. e.g. +123.
+            </p>
+            <p>
+              <code>phrase2</code> uses the negative look ahead operator. It works just as described above except that
+              it succeeds if <code>"+"</code> is <em>not</em> found and fails if it is. That is,
+              <code>phrase2</code> accepts only numbers with no sign or with a negative sign. e.g. -123 or 123.
+            </p>
+            <p>
+              A good discussion of these operators, also known as syntactic predicates, can be found
+              <a href="https://en.wikipedia.org/wiki/Syntactic_predicate">here</a>.
+            </p>
+            <hr />
+            <h2 id="operator-summary">Operator Summary</h2>
+            <h3 id="terminal-sabnf-operators">Terminal SABNF Operators</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>operator</th>
+                  <th>notation</th>
+                  <th>form</th>
+                  <th>description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>TLS</strong></td>
+                  <td>“string”</td>
+                  <td>ABNF</td>
+                  <td>terminal literal string</td>
+                </tr>
+                <tr>
+                  <td><strong>TBS</strong></td>
+                  <td>%d65.66.67</td>
+                  <td>ABNF</td>
+                  <td>terminal binary string</td>
+                </tr>
+                <tr>
+                  <td><strong>TRG</strong></td>
+                  <td>%d48-57</td>
+                  <td>ABNF</td>
+                  <td>terminal range</td>
+                </tr>
+                <tr>
+                  <td><strong>UDT</strong></td>
+                  <td>u_name or e_name</td>
+                  <td>SABNF</td>
+                  <td>User-Defined Terminal</td>
+                </tr>
+              </tbody>
+            </table>
+            <h3 id="non-terminal-sabnf-operators">Non-Terminal SABNF Operators</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>operator</th>
+                  <th>notation</th>
+                  <th>form</th>
+                  <th>description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>ALT</strong></td>
+                  <td>/</td>
+                  <td>ABNF</td>
+                  <td>alternative</td>
+                </tr>
+                <tr>
+                  <td><strong>CAT</strong></td>
+                  <td>space</td>
+                  <td>ABNF</td>
+                  <td>concatenation</td>
+                </tr>
+                <tr>
+                  <td><strong>REP</strong></td>
+                  <td>n*m</td>
+                  <td>ABNF</td>
+                  <td>repetition</td>
+                </tr>
+                <tr>
+                  <td><strong>RNM</strong></td>
+                  <td>name</td>
+                  <td>ABNF</td>
+                  <td>rule name</td>
+                </tr>
+                <tr>
+                  <td><strong>AND</strong></td>
+                  <td>&amp;</td>
+                  <td>SABNF</td>
+                  <td>positive look ahead</td>
+                </tr>
+                <tr>
+                  <td><strong>NOT</strong></td>
+                  <td>!</td>
+                  <td>SABNF</td>
+                  <td>negative look ahead</td>
+                </tr>
+              </tbody>
+            </table>
+          </article>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>
