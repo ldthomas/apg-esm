@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -144,7 +144,9 @@
         cursor: pointer;
         font-size: 0.875rem;
         font-weight: 500;
-        transition: background 0.12s, opacity 0.12s;
+        transition:
+          background 0.12s,
+          opacity 0.12s;
         white-space: nowrap;
       }
       button:disabled {
@@ -425,11 +427,11 @@
     </main>
 
     <script type="module">
-      import Api from '../src/apg-api/api.js';
-      import Parser from '../src/apg-lib/parser.js';
-      import Stats from '../src/apg-lib/stats.js';
-      import Trace from '../src/apg-lib/trace.js';
-      import TraceSabnf from '../src/apg-lib/traceSabnf.js';
+      import Api from './src/apg-api/api.js';
+      import Parser from './src/apg-lib/parser.js';
+      import Stats from './src/apg-lib/stats.js';
+      import Trace from './src/apg-lib/trace.js';
+      import TraceSabnf from './src/apg-lib/traceSabnf.js';
 
       /* ─── State ─────────────────────────────────────────────────────── */
       let grammarReady = false;
@@ -614,7 +616,7 @@
             renderTabs(
               'grammar',
               tabs,
-              tabs.findIndex((t) => t.isError)
+              tabs.findIndex((t) => t.isError),
             );
             return;
           }

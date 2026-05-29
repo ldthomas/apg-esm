@@ -2,6 +2,7 @@
 !.gitignore
 !.eslintrc.json
 !.prettierrc
+!.github
 *~
 *.log
 *.out
