@@ -61,7 +61,7 @@ function opToString(op) {
  * @description Records and displays a trace of every operator visited during a parse,
  * annotated with the corresponding position in the SABNF grammar source text.
  */
-export default class Trace {
+export default class TraceSabnf {
   constructor() {
     this.traceSabnfObject = 'traceSabnfObject';
   }

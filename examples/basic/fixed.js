@@ -12,13 +12,10 @@ The grammar constructor, Grammar, was generated from the ABNF grammar, float.txt
 npm run apg -- -i ./examples/basic/float.txt -o ./examples/basic/float
 `;
 
-function fixed() {
-  /* make a parser from the grammar object */
-  const grammar = new Grammar();
-  const parser = new Parser(grammar);
-  const result = parser.parse(0, '-123.0e-10');
-  console.log(description);
-  console.log('FIXED PARSER RESULT');
-  console.dir(result);
-}
-fixed();
+/* make a parser from the grammar object */
+const grammar = new Grammar();
+const parser = new Parser(grammar);
+const result = parser.parse(0, '-123.0e-10');
+console.log(description);
+console.log('FIXED PARSER RESULT');
+console.dir(result);

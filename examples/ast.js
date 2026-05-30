@@ -20,86 +20,83 @@ but this situation is quite common in real life grammars.
 `;
 
 const THIS_FILENAME = 'examples/ast.js';
-function single() {
-  /* the SABNF grammar */
-  let float = '';
-  float += 'S = (A B) / (A C)\n';
-  float += 'A = %s"a"\n';
-  float += 'B = %s"b"\n';
-  float += 'C = %s"c"\n';
+/* the SABNF grammar */
+let float = '';
+float += 'S = (A B) / (A C)\n';
+float += 'A = %s"a"\n';
+float += 'B = %s"b"\n';
+float += 'C = %s"c"\n';
 
-  /* the rule name callback functions */
-  const rulea = (sys, chars, phraseIndex, data) => {
-    if (sys.state === ids.MATCH) {
-      console.log('parse tree rule A matched');
-    }
-  };
-  const ruleb = (sys, chars, phraseIndex, data) => {
-    if (sys.state === ids.MATCH) {
-      console.log('parse tree rule B matched');
-    }
-  };
-  const rulec = (sys, chars, phraseIndex, data) => {
-    if (sys.state === ids.MATCH) {
-      console.log('parse tree rule C matched');
-    }
-  };
-
-  /* the AST callback functions */
-  // function semFile(state, chars, phraseIndex, phraseCount, data) {
-  const asta = (state, chars, phraseIndex, phraseCount, data) => {
-    if (state === ids.SEM_PRE) {
-      console.log('AST rule A matched');
-    }
-  };
-  const astb = (state, chars, phraseIndex, phraseCount, data) => {
-    if (state === ids.SEM_PRE) {
-      console.log('AST rule B matched');
-    }
-  };
-  const astc = (state, chars, phraseIndex, phraseCount, data) => {
-    if (state === ids.SEM_PRE) {
-      console.log('AST rule c matched');
-    }
-  };
-
-  /* test complete generation in one step */
-  const api = new Api(float);
-  api.generate();
-  if (api.errors.length) {
-    console.log(api.errorsToAscii());
-    throw new Error(`${THIS_FILENAME}grammar has errors`);
+/* the rule name callback functions */
+const rulea = (sys, chars, phraseIndex, data) => {
+  if (sys.state === ids.MATCH) {
+    console.log('parse tree rule A matched');
   }
+};
+const ruleb = (sys, chars, phraseIndex, data) => {
+  if (sys.state === ids.MATCH) {
+    console.log('parse tree rule B matched');
+  }
+};
+const rulec = (sys, chars, phraseIndex, data) => {
+  if (sys.state === ids.MATCH) {
+    console.log('parse tree rule C matched');
+  }
+};
 
-  console.log(description);
+/* the AST callback functions */
+// function semFile(state, chars, phraseIndex, phraseCount, data) {
+const asta = (state, chars, phraseIndex, phraseCount, data) => {
+  if (state === ids.SEM_PRE) {
+    console.log('AST rule A matched');
+  }
+};
+const astb = (state, chars, phraseIndex, phraseCount, data) => {
+  if (state === ids.SEM_PRE) {
+    console.log('AST rule B matched');
+  }
+};
+const astc = (state, chars, phraseIndex, phraseCount, data) => {
+  if (state === ids.SEM_PRE) {
+    console.log('AST rule c matched');
+  }
+};
 
-  /* make a parser from the grammar object */
-  const grammar = api.toObject();
-  const parser = new Parser(grammar);
-  const ast = new Ast(grammar);
-  parser.setAst(ast);
-
-  /* attach the callback functions to the paraser */
-  parser.setCallback('a', rulea);
-  parser.setCallback('b', rulec);
-  parser.setCallback('c', rulec);
-
-  /* attach the callback functions to the AST */
-  ast.setCallback('a', asta);
-  ast.setCallback('b', astb);
-  ast.setCallback('c', astc);
-
-  console.log('PARSE WITH RULE NAME CALLBACKS');
-  console.log('Note that rule A is matched twice,');
-  console.log('once on the first branch that ultimatly fails');
-  console.log('and once again on the second successful branch.\n');
-  const result = parser.parse(0, 'ac');
-
-  console.log('\nTRANSLATE WITH THE AST');
-  console.log('Note that rule A is matched only once, as required.\n');
-  ast.translate();
-
-  // console.log('PARSER RESULT');
-  // console.dir(result);
+/* test complete generation in one step */
+const api = new Api(float);
+api.generate();
+if (api.errors.length) {
+  console.log(api.errorsToAscii());
+  throw new Error(`${THIS_FILENAME}grammar has errors`);
 }
-single();
+
+console.log(description);
+
+/* make a parser from the grammar object */
+const grammar = api.toObject();
+const parser = new Parser(grammar);
+const ast = new Ast(grammar);
+parser.setAst(ast);
+
+/* attach the callback functions to the paraser */
+parser.setCallback('a', rulea);
+parser.setCallback('b', rulec);
+parser.setCallback('c', rulec);
+
+/* attach the callback functions to the AST */
+ast.setCallback('a', asta);
+ast.setCallback('b', astb);
+ast.setCallback('c', astc);
+
+console.log('PARSE WITH RULE NAME CALLBACKS');
+console.log('Note that rule A is matched twice,');
+console.log('once on the first branch that ultimatly fails');
+console.log('and once again on the second successful branch.\n');
+const result = parser.parse(0, 'ac');
+
+console.log('\nTRANSLATE WITH THE AST');
+console.log('Note that rule A is matched only once, as required.\n');
+ast.translate();
+
+// console.log('PARSER RESULT');
+// console.dir(result);

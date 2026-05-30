@@ -3,15 +3,14 @@
  *     license: MIT (https://opensource.org/license/mit)
  *   ********************************************************************************* */
 import apg from './src/apg/apg.js';
-import ast from './src/apg-lib/ast.js';
+import Api from './src/apg-api/api.js';
+import Parser from './src/apg-lib/parser.js';
+import Ast from './src/apg-lib/ast.js';
+import Stats from './src/apg-lib/stats.js';
+import Trace from './src/apg-lib/trace.js';
+import TraceSabnf from './src/apg-lib/traceSabnf.js';
 import ids from './src/apg-lib/identifiers.js';
-import parser from './src/apg-lib/parser.js';
-import stats from './src/apg-lib/stats.js';
-import trace from './src/apg-lib/trace.js';
 import * as utils from './src/apg-lib/utilities.js';
-import apgApi from './src/apg-api/api.js';
 
-const apgLib = { ast, ids, parser, stats, trace, utils };
-
-export { apg, apgLib, apgApi };
-export default { apg, apgLib, apgApi };
+export { apg, Api, Parser, Ast, Stats, Trace, TraceSabnf, ids, utils };
+export default { apg, Api, Parser, Ast, Stats, Trace, TraceSabnf, ids, utils };

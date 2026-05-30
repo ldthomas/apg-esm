@@ -28,21 +28,18 @@ const astDecimal = (state, chars, phraseIndex, phraseCount, data) => {
   }
 };
 
-function fixed() {
-  /* make a parser from the grammar object */
-  const grammar = new Grammar();
-  const parser = new Parser(grammar);
-  const ast = new Ast(grammar);
-  ast.setCallback('float', astFloat);
-  ast.setCallback('decimal', astDecimal);
-  parser.setAst(ast);
-  console.log(description);
-  const result = parser.parse(0, '-123.0e-10');
-  console.log('\nFIXED PARSER RESULT');
-  console.dir(result);
-  console.log('\nAST CALLBACK OUTPUT');
-  ast.translate({});
-  console.log('\nAST TO XML');
-  console.log(ast.toXml('ascii'));
-}
-fixed();
+/* make a parser from the grammar object */
+const grammar = new Grammar();
+const parser = new Parser(grammar);
+const ast = new Ast(grammar);
+ast.setCallback('float', astFloat);
+ast.setCallback('decimal', astDecimal);
+parser.setAst(ast);
+console.log(description);
+const result = parser.parse(0, '-123.0e-10');
+console.log('\nFIXED PARSER RESULT');
+console.dir(result);
+console.log('\nAST CALLBACK OUTPUT');
+ast.translate({});
+console.log('\nAST TO XML');
+console.log(ast.toXml('ascii'));
