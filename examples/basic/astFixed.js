@@ -7,6 +7,15 @@ import Parser from '../../src/apg-lib/parser.js';
 import Ast from '../../src/apg-lib/ast.js';
 import id from '../../src/apg-lib/identifiers.js';
 import { charsToString } from '../../src/apg-lib/utilities.js';
+/* To use this example in your own project:
+ *   npm install apg-esm
+ * Then generate the grammar object, float.js
+ * from the SABNF grammar text, float.txt
+ *   node node_modules/apg-esm/src/apg/generator.js -i basic/float.txt -o basic/float
+ * Then replace the other imports above with:
+ *   import { Parser, Ast, ids, utils } from "apg-esm";
+ *   const charsToString = utils.charsToString;
+ */
 
 const description = `
 Simple demonstration of how to parse a string with a previously generated grammar object.

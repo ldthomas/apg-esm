@@ -6,6 +6,11 @@ import Api from '../src/apg-api/api.js';
 import Parser from '../src/apg-lib/parser.js';
 import Ast from '../src/apg-lib/ast.js';
 import ids from '../src/apg-lib/identifiers.js';
+/* To use this example in your own project:
+ *   npm install apg-esm
+ * Then replace the imports above with:
+ *   import { Api, Parser, Ast, ids } from "apg-esm";
+ */
 
 const description = `
 Demonstration of using the Abstract Syntax Tree (AST) for safe translation of the parser's

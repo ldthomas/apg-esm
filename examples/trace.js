@@ -5,6 +5,11 @@
 import Api from '../src/apg-api/api.js';
 import Parser from '../src/apg-lib/parser.js';
 import Trace from '../src/apg-lib/trace.js';
+/* To use this example in your own project:
+ *   npm install apg-esm
+ * Then replace the imports above with:
+ *   import { Api, Parser, Trace } from "apg-esm";
+ */
 
 const description = `
 Demonstrate how to generate a trace of the parser through the parse tree.

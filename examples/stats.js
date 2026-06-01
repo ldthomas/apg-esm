@@ -5,6 +5,11 @@
 import Api from '../src/apg-api/api.js';
 import Parser from '../src/apg-lib/parser.js';
 import Stats from '../src/apg-lib/stats.js';
+/* To use this example in your own project:
+ *   npm install apg-esm
+ * Then replace the imports above with:
+ *   import { Api, Parser, Stats } from "apg-esm";
+ */
 
 const description = `
 Demonstrate how to generate statistics of the parser's path through the parse tree.

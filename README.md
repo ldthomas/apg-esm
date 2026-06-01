@@ -62,6 +62,25 @@ chosen to illustrate all of the main features, demonstrate the setup. These are 
 Each is self-contained and displays a brief explanation of what it does in the code and output.
 Scripts, named the same as each respective example, are available to run them.
 
+## npm
+
+To use `apg-esm` in a your project run `npm install apg-esm`. All classes and components can then
+be imported directly from `apg-esm`. To see how this is done, all of the examples
+in the `./examples` directory have a comment section illustrating how to run a similar
+example in your own project.
+
+To use the generator to convert SABNF grammar text into a grammar object file add the following
+script to your project.
+
+```
+  "scripts": {
+    "generator": "node node_modules/apg-esm/src/apg/generator.js"
+  },
+
+```
+
+Then use `npm run generator -- --help` to see all of the generator options.
+
 ## Visualization
 
 A significant new feature of `apg-esm` is the addition of a web page for

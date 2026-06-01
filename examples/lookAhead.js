@@ -4,6 +4,11 @@
  *   ********************************************************************************* */
 import Api from '../src/apg-api/api.js';
 import Parser from '../src/apg-lib/parser.js';
+/* To use this example in your own project:
+ *   npm install apg-esm
+ * Then replace the imports above with:
+ *   import { Api, Parser } from "apg-esm";
+ */
 
 const description = `
 It is well known that the strings a^nb^nc^n, n > 0, cannot be represented with a context-free grammar.

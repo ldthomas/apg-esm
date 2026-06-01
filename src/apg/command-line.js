@@ -52,15 +52,10 @@ export default function commandLine(args) {
     return help;
   };
   const version = () => {
-    try {
-      const pkgPath = path.resolve(process.cwd(), 'package.json');
-      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-      return `${pkg.name}, version ${
-        pkg.version
-      }\nCopyright (c) ${new Date().getFullYear()} Lowell D. Thomas\nReleased under the MIT License.\n`;
-    } catch (e) {
-      return 'Refactored JavaScript APG, version 1.1.0\nCopyright (C) 2026 Lowell D. Thomas\n';
-    }
+    const v = 'apg-esm, version 1.0.0';
+    const c = 'Copyright (c) 2026 Lowell D. Thomas';
+    const l = 'MIT License';
+    return `${v}\n${c}\n${l}\n`;
   };
   const STRICTL = '--strict';
   const STRICTS = '-s';
@@ -148,7 +143,7 @@ export default function commandLine(args) {
             value
               .split(',')
               .map((s) => s.trim())
-              .filter(Boolean)
+              .filter(Boolean),
           );
           i += key === INL ? 1 : 2;
           break;

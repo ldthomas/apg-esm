@@ -9,24 +9,24 @@
 // There are several non-fatal attributes that are of interest also.
 // This module will determine six different attributes listed here with simple examples.
 //
-// **fatal attributes**<br>
-// left recursion<br>
+// **fatal attributes**
+// left recursion
 // S = S "x" / "y"
 //
-// cyclic<br>
+// cyclic
 // S = S
 //
-// infinite<br>
+// infinite
 // S = "y" S
 //
-// **non-fatal attributes** (but nice to know)<br>
-// nested recursion<br>
+// **non-fatal attributes** (but nice to know)
+// nested recursion
 // S = "a" S "b" / "y"
 //
-// right recursion<br>
+// right recursion
 // S = "x" S / "y"
 //
-// empty string<br>
+// empty string
 // S = "x" S / ""
 //
 // Note that these are “aggregate” attributes, in that if the attribute is true it only means that it can be true,
@@ -42,12 +42,12 @@
 //
 // Additionally, the attribute phase will identify rule dependencies and mutually-recursive groups. For example,
 //
-// S = "a" A "b" / "y"<br>
+// S = "a" A "b" / "y"
 // A = "x"
 //
 // S is dependent on A but A is not dependent on S.
 //
-// S = "a" A "b" / "c"<br>
+// S = "a" A "b" / "c"
 // A = "x" S "y" / "z"
 //
 // S and A are dependent on one another and are mutually recursive.

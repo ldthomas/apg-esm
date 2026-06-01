@@ -40,7 +40,7 @@ function validateRnmCallbackResult(rule, sysData, charsLeft, down) {
       break;
     default:
       throw new Error(
-        `${THIS_FILE}opRNM(${rule.name}): callback function return error. Unrecognized return state: ${sysData.state}`
+        `${THIS_FILE}opRNM(${rule.name}): callback function return error. Unrecognized return state: ${sysData.state}`,
       );
   }
 }
@@ -78,7 +78,7 @@ function validateUdtCallbackResult(udt, sysData, charsLeft) {
       break;
     default:
       throw new Error(
-        `${THIS_FILE}opUDT(${udt.name}): callback function return error. Unrecognized return state: ${sysData.state}`
+        `${THIS_FILE}opUDT(${udt.name}): callback function return error. Unrecognized return state: ${sysData.state}`,
       );
   }
 }
@@ -353,7 +353,7 @@ export default class Parser {
     };
   }
 
-  // The `ALT` operator.<br>
+  // The `ALT` operator.
   // Executes its child nodes, from left to right, until it finds a match.
   // Fails if *all* of its child nodes fail.
   _opALT(opIndex, phraseIndex, sysData) {
@@ -366,7 +366,7 @@ export default class Parser {
     }
   }
 
-  // The `CAT` operator.<br>
+  // The `CAT` operator.
   // Executes all of its child nodes, from left to right,
   // concatenating the matched phrases.
   // Fails if *any* child nodes fail.
@@ -401,7 +401,7 @@ export default class Parser {
     }
   }
 
-  // The `REP` operator.<br>
+  // The `REP` operator.
   // Repeatedly executes its single child node,
   // concatenating each of the matched phrases found.
   // The number of repetitions executed and its final sysData depends
@@ -434,7 +434,7 @@ export default class Parser {
     }
   }
 
-  // The `RNM` operator.<br>
+  // The `RNM` operator.
   // This operator acts as a root node for a parse tree branch below and
   // returns the matched phrase to its parent.
   // It handles user-defined callback functions and `AST` nodes.
@@ -486,7 +486,7 @@ export default class Parser {
     }
   }
 
-  // The `UDT` operator.<br>
+  // The `UDT` operator.
   // Simply calls the user's callback function, but operates like `RNM` with regard to the `AST`.
   // `UDT`s act as terminals for phrase recognition but as named rules for `AST` nodes.
   // See [`ast.js`](./ast.html) for usage.
@@ -519,7 +519,7 @@ export default class Parser {
     }
   }
 
-  // The `AND` operator.<br>
+  // The `AND` operator.
   // This is the positive `look ahead` operator.
   // Executes its single child node, returning the EMPTY state
   // if it succeeds and NOMATCH if it fails.
@@ -542,7 +542,7 @@ export default class Parser {
     }
   }
 
-  // The `NOT` operator.<br>
+  // The `NOT` operator.
   // This is the negative `look ahead` operator.
   // Executes its single child node, returning the EMPTY state
   // if it *fails* and NOMATCH if it succeeds.
@@ -566,7 +566,7 @@ export default class Parser {
     }
   }
 
-  // The `TRG` operator.<br>
+  // The `TRG` operator.
   // Succeeds if the single first character of the phrase is
   // within the `min - max` range.
   _opTRG(opIndex, phraseIndex, sysData) {
@@ -580,7 +580,7 @@ export default class Parser {
     }
   }
 
-  // The `TBS` operator.<br>
+  // The `TBS` operator.
   // Matches its pre-defined phrase against the input string.
   // All characters must match exactly.
   // Case-sensitive literal strings (`'string'` & `%s"string"`) are translated to `TBS`
@@ -602,7 +602,7 @@ export default class Parser {
     }
   }
 
-  // The `TLS` operator.<br>
+  // The `TLS` operator.
   // Matches its pre-defined phrase against the input string.
   // A case-insensitive match is attempted for ASCII alphabetical characters.
   // `TLS` is the only operator that explicitly allows empty phrases.
@@ -632,7 +632,7 @@ export default class Parser {
     }
   }
 
-  // Generalized execution function.<br>
+  // Generalized execution function.
   // Having a single, generalized function, allows a single location
   // for tracing and statistics gathering functions to be called.
   // Tracing and statistics are handled in separate objects.

@@ -4,6 +4,11 @@
  *   ********************************************************************************* */
 import Api from '../../src/apg-api/api.js';
 import Parser from '../../src/apg-lib/parser.js';
+/* To use this example in your own project:
+ *   npm install apg-esm
+ * Then replace the imports above with:
+ *   import { Api, Parser } from 'apg-esm';
+ */
 
 const description = `
 Simple demonstration of how to generate a grammar object dynamically in a single

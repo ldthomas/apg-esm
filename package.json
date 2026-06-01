@@ -7,7 +7,7 @@
   "scripts": {
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --silent --coverage",
     "jest": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "apg": "node src/apg/generator.js",
+    "generator": "node src/apg/generator.js",
     "server": "node server.js",
     "jsdoc": "jsdoc --configure jsdoc.json",
     "fixed": "node examples/basic/fixed.js",
