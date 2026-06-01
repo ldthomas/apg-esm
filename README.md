@@ -28,7 +28,7 @@ an equivalent grammar object.
 command line options run:
 
 ```
-npm run apg -- --help
+npm run generator -- --help
 ```
 
 ## The Parser
