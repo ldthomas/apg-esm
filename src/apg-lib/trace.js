@@ -44,16 +44,16 @@ function opName(op, rules, udts) {
       break;
     case id.TBS:
       if (op.string.length > 6) {
-        name = `TBS(${charsToString(op.string, 0, 3)}...)`;
+        name = `TBS(${charsToString(op.string, 0, 3).replace(/\r/g, '\\r').replace(/\n/g, '\\n')}...)`;
       } else {
-        name = `TBS(${charsToString(op.string, 0, 6)})`;
+        name = `TBS(${charsToString(op.string, 0, 6).replace(/\r/g, '\\r').replace(/\n/g, '\\n')})`;
       }
       break;
     case id.TLS:
       if (op.string.length > 6) {
-        name = `TLS(${charsToString(op.string, 0, 3)}...)`;
+        name = `TLS(${charsToString(op.string, 0, 3).replace(/\r/g, '\\r').replace(/\n/g, '\\n')}...)`;
       } else {
-        name = `TLS(${charsToString(op.string, 0, 6)})`;
+        name = `TLS(${charsToString(op.string, 0, 6).replace(/\r/g, '\\r').replace(/\n/g, '\\n')})`;
       }
       break;
     case id.UDT:
@@ -100,7 +100,7 @@ export default class Trace {
         ? lookAheadIndent(this._treeDepth)
         : indent(this._treeDepth);
     const len = Math.min(MAX_PHRASE, this._chars.length - offset);
-    let phrase = charsToString(this._chars, offset, len);
+    let phrase = charsToString(this._chars, offset, len).replace(/\r/g, '\\r').replace(/\n/g, '\\n');
     if (len < this._chars.length - offset) {
       phrase += '...';
     }
@@ -126,9 +126,9 @@ export default class Trace {
         st = '|M|';
         len = Math.min(MAX_PHRASE, phraseLength);
         if (len < phraseLength) {
-          phrase = `${ol}'${charsToString(this._chars, offset, len)}...'`;
+          phrase = `${ol}'${charsToString(this._chars, offset, len).replace(/\r/g, '\\r').replace(/\n/g, '\\n')}...'`;
         } else {
-          phrase = `${ol}'${charsToString(this._chars, offset, len)}'`;
+          phrase = `${ol}'${charsToString(this._chars, offset, len).replace(/\r/g, '\\r').replace(/\n/g, '\\n')}'`;
         }
         break;
       case id.NOMATCH:
@@ -149,7 +149,7 @@ export default class Trace {
    */
   display() {
     let out = 'INPUT STRING\n';
-    out += charsToString(this._chars, 0, this._chars.length);
+    out += charsToString(this._chars, 0, this._chars.length).replace(/\r/g, '\\r').replace(/\n/g, '\\n');
     out += '\n\nPARSE TREE NODE TRACE\n';
     out += this._out;
     return out;

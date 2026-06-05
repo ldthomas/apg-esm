@@ -21,11 +21,10 @@ const THIS_FILE = 'scanner.js: ';
  * @param {number[]} chars - Array of integer character codes representing the SABNF grammar text.
  * @param {Object[]} errors - Array to which error objects `{ line, char, msg }` are appended.
  * @param {boolean} [strict] - If `true`, every line (including the last) must end with CRLF (`\r\n`).
- * @param {Trace} [trace] - Optional parser `Trace` object for debugging the scan phase.
  * @returns {Object[]} Array of line descriptor objects with `lineNo`, `beginChar`, `length`,
  *   `textLength`, `endType`, and `invalidChars` properties.
  */
-export default function scanner(chars, errors, strict, trace) {
+export default function scanner(chars, errors, strict) {
   const grammar = new ScannerGrammar();
 
   /* Scan the grammar for character code errors and catalog the lines. */
@@ -37,9 +36,6 @@ export default function scanner(chars, errors, strict, trace) {
     Object.keys(callbacks).forEach((name) => {
       ast.setCallback(name, callbacks[name]);
     });
-  }
-  if (trace) {
-    parser.setTrace(trace);
   }
 
   /* parse the input SABNF grammar */

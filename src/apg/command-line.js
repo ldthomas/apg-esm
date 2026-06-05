@@ -42,6 +42,7 @@ export default function commandLine(args) {
     help += 'Options are case insensitive.\n';
     help += '*  Multiple input files allowed.\n';
     help += '   Multiple file names must be comma separated.\n';
+    help += '   If commas are preceeded and/or followed by spaces, path list must be quoted.\n';
     help += '   File names from multiple input options are concatenated.\n';
     help += '   Content of all resulting input files is concatenated.\n';
     help += '** Output file name is optional.\n';

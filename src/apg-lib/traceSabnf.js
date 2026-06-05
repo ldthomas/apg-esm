@@ -83,7 +83,7 @@ export default class TraceSabnf {
     let phrase = null;
     if (state === id.MATCH || state === id.EMPTY) {
       const len = Math.min(length, MAX_PHRASE);
-      phrase = charsToString(this._chars, offset, len);
+      phrase = charsToString(this._chars, offset, len).replace(/\r/g, '\\r').replace(/\n/g, '\\n');
       if (length > MAX_PHRASE) phrase = phrase + '...';
     }
     let gline = this._sabnf[op.gl];

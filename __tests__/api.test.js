@@ -19,7 +19,7 @@ test('grammar object constructed in separate steps does not throw and returns su
   }).not.toThrow();
   expect(result.success).toBe(true);
 });
-test('grammar object constructed in a singel step does not throw and returns success', () => {
+test('grammar object constructed in a single step does not throw and returns success', () => {
   let result;
   expect(() => {
     result = single();

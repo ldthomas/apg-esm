@@ -122,10 +122,9 @@ export default class Api {
    * @description Scans the input grammar for invalid characters and catalogs line positions.
    * Must be called before `parse()`.
    * @param {boolean} [strict] - If `true`, all lines must end with CRLF (`\r\n`).
-   * @param {Trace} [trace] - Optional parser `Trace` object for debugging the scan phase.
    */
-  scan(strict, trace) {
-    this.lines = scanner(this.chars, this.errors, strict, trace);
+  scan(strict) {
+    this.lines = scanner(this.chars, this.errors, strict);
     this._isScanned = true;
   }
 
@@ -133,13 +132,12 @@ export default class Api {
    * @method parse
    * @description Parses the grammar for correct SABNF syntax. Must be called after `scan()`.
    * @param {boolean} [strict] - If `true`, restricts to RFC 5234/7405 ABNF only.
-   * @param {Trace} [trace] - Optional parser `Trace` object for debugging.
    */
-  parse(strict, trace) {
+  parse(strict) {
     if (!this._isScanned) {
       throw new Error(`${THIS_FILE}grammar not scanned`);
     }
-    this._parser.syntax(this.chars, this.lines, this.errors, strict, trace);
+    this._parser.syntax(this.chars, this.lines, this.errors, strict);
     this._isParsed = true;
   }
 

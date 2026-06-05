@@ -21,7 +21,7 @@ const description = `
 Simple demonstration of how to parse a string with a previously generated grammar object.
 The grammar constructor, Grammar, was generated from the ABNF grammar, float.txt with:
 
-npm run apg -- -i ./examples/basic/float.txt -o ./examples/basic/float
+npm run generator -- -i ./examples/basic/float.txt -o ./examples/basic/float
 
 An Abstract Syntax Tree (AST) is constructed and converted to XML format.
 `;

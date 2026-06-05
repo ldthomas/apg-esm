@@ -114,12 +114,8 @@ export default class SabnfParser {
    * @param {Object[]} lines - Line descriptor array from the scanner.
    * @param {Object[]} errors - Array to which error objects are appended.
    * @param {boolean} [strict] - If `true`, restrict to RFC 5234/7405 ABNF only.
-   * @param {Trace} [trace] - Optional parser `Trace` object.
    */
-  syntax(chars, lines, errors, strict, trace) {
-    if (trace) {
-      this._parser.setTrace(trace);
-    }
+  syntax(chars, lines, errors, strict) {
     const data = {};
     data.errors = errors;
     data.strict = !!strict;
