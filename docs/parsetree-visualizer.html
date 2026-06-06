@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+﻿<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -576,8 +576,15 @@ PARSE TREE NODE TRACE
         const ti = text.indexOf(inputMarker);
         const tt = text.indexOf(traceMarker);
         if (ti !== -1 && tt !== -1 && tt > ti) {
-          // Strip the trailing blank line between input and trace marker
-          const inputStr = text.slice(ti + inputMarker.length, tt).replace(/[\r\n]+$/, '');
+          // Strip the trailing blank line between input and trace marker,
+          // then unescape \r / \n back to actual CR/LF characters so that
+          // character indices match the real parser offsets.
+          const inputStr = text
+            .slice(ti + inputMarker.length, tt)
+            .replace(/[\r\n]+$/, '')
+            .replace(/\\r\\n/g, '\r\n')
+            .replace(/\\r/g, '\r')
+            .replace(/\\n/g, '\n');
           const traceText = text.slice(tt + traceMarker.length);
           return { inputStr, traceText };
         }
@@ -663,7 +670,12 @@ PARSE TREE NODE TRACE
       // ─── Derive the full input string from the first DOWN step (old-format fallback) ───
       function extractInput(steps) {
         for (const s of steps) {
-          if (s.direction === 'down' && s.phrase) return s.phrase.replace(/\.\.\.$/g, '');
+          if (s.direction === 'down' && s.phrase)
+            return s.phrase
+              .replace(/\.\.\.$/g, '')
+              .replace(/\\r\\n/g, '\r\n')
+              .replace(/\\r/g, '\r')
+              .replace(/\\n/g, '\n');
         }
         return '';
       }
@@ -676,7 +688,11 @@ PARSE TREE NODE TRACE
         for (const s of steps) {
           if (s.direction === 'down') {
             const truncated = s.phrase.endsWith('...');
-            const stripped = truncated ? s.phrase.slice(0, -3) : s.phrase;
+            // Unescape \r/\n in the phrase so it matches the unescaped inputStr.
+            const stripped = (truncated ? s.phrase.slice(0, -3) : s.phrase)
+              .replace(/\\r\\n/g, '\r\n')
+              .replace(/\\r/g, '\r')
+              .replace(/\\n/g, '\n');
             let idx = input.indexOf(stripped, lastOffset);
             if (idx < 0) idx = input.indexOf(stripped, 0);
             if (idx < 0 && !truncated) idx = input.length - stripped.length;
@@ -923,7 +939,7 @@ PARSE TREE NODE TRACE
       <span class="detail-label">Depth</span><span class="detail-value">${s.depth}</span>
       <span class="detail-label">Look-ahead</span><span class="detail-value">${s.lookAhead ? 'yes' : 'no'}</span>
       <span class="detail-label">Phrase</span><span class="detail-value">${escHtml(
-        s.direction === 'down' ? s.phrase : s.matchedPhrase ?? ''
+        s.direction === 'down' ? s.phrase : (s.matchedPhrase ?? ''),
       )}</span>
     `;
         }
