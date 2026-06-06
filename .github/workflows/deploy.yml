@@ -26,12 +26,11 @@ jobs:
 
       - name: Build deployment directory
         run: |
-          mkdir -p _site/docs
           mkdir -p _site/src
-          cp -r docs/. _site/docs/
+          cp -r docs/. _site/
           cp -r src/apg-api _site/src/apg-api
           cp -r src/apg-lib _site/src/apg-lib
-          printf '<html><head><meta http-equiv="refresh" content="0;url=docs/"></head></html>\n' > _site/index.html
+          sed -i "s|from '\.\./src/|from './src/|g" _site/index.html
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
