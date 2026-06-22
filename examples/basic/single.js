@@ -2,8 +2,8 @@
  *   copyright: Copyright (c) 2026 Lowell D. Thomas
  *     license: MIT (https://opensource.org/license/mit)
  *   ********************************************************************************* */
-import Api from '../../src/apg-api/api.js';
-import Parser from '../../src/apg-lib/parser.js';
+import Api from '../../dist/apg-api/api.js';
+import Parser from '../../dist/apg-lib/parser.js';
 /* To use this example in your own project:
  *   npm install apg-esm
  * Then replace the imports above with:

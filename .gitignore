@@ -9,6 +9,7 @@
 *.zip
 *.tgz
 **node_modules/
+**/dist/
 **/coverage/
 **output/
 **documentation/

@@ -261,14 +261,15 @@ export default class Api {
    * Requires a successful `attributes()` call with zero errors.
    * @returns {string} JavaScript source code for the grammar constructor function.
    */
-  toSource() {
+  toSource(typescript) {
+    typescript = !!typescript;
     if (!this._haveAttributes) {
       throw new Error(`${THIS_FILE}can't generate parser source - must be preceded by call to attributes()`);
     }
     if (this._attributeErrors) {
       throw new Error(`${THIS_FILE}can't generate parser source - attributes have ${this._attributeErrors} errors`);
     }
-    return this._parser.generateSource(this.chars, this.lines, this.rules, this.udts);
+    return this._parser.generateSource(this.chars, this.lines, this.rules, this.udts, typescript);
   }
 
   /**

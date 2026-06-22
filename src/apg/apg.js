@@ -96,7 +96,7 @@ export default function apg(args) {
 
     /* generate a JavaScript parser, if requested */
     if (config.outfd) {
-      fs.writeSync(config.outfd, api.toSource());
+      fs.writeSync(config.outfd, api.toSource(config.typescript));
       console.log(`\napg grammar object generated: ${config.outFilename}`);
     }
   } catch (e) {

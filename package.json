@@ -1,12 +1,21 @@
 {
   "name": "apg-esm",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "type": "module",
   "description": "JavaScript APG, an ABNF Parser Generator",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
   "scripts": {
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --silent --coverage",
     "jest": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "build": "tsc",
     "generator": "node src/apg/generator.js",
     "server": "node server.js",
     "jsdoc": "jsdoc --configure jsdoc.json",
@@ -50,6 +59,7 @@
     ]
   },
   "devDependencies": {
+    "@types/node": "^26.0.0",
     "eslint": "^8.57.1",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-prettier": "^9.1.2",
@@ -58,6 +68,7 @@
     "jest": "^30.3.0",
     "jsdoc": "^4.0.5",
     "prettier": "^3.8.3",
-    "prettier-eslint": "^16.3.0"
+    "prettier-eslint": "^16.3.0",
+    "typescript": "^6.0.3"
   }
 }

@@ -10,7 +10,7 @@
  */
 import Parser from '../apg-lib/parser.js';
 import Ast from '../apg-lib/ast.js';
-import ScannerGrammar from './scanner-grammar.js';
+import ScannerGrammar from '../../dist/apg-api/scanner-grammar.js';
 import { callbacks } from './scanner-callbacks.js';
 
 const THIS_FILE = 'scanner.js: ';

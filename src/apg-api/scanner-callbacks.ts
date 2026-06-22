@@ -9,8 +9,25 @@
  */
 import ids from '../apg-lib/identifiers.js';
 import { charToHex } from '../apg-lib/utilities.js';
+    // const sysData = {
+    //   state: id.ACTIVE,
+    //   phraseLength: 0,
+    //   ruleIndex: 0,
+    //   udtIndex: 0,
+    //   lookAhead: this._lookAhead,
+    // };
 
-function semFile(state, chars, phraseIndex, phraseCount, data) {
+interface SysData = {
+  state: Number;
+  phraseLength: Number;
+  ruleIndex: Number;
+  udtIndex: Number;
+  lookAhead: Number;
+}
+
+type Characters = number[];
+
+function semFile(state: SysData, chars: number[], phraseIndex: number, phraseCount:number, data: object): number {
   if (state === ids.SEM_PRE) {
     if (phraseCount === 0) {
       data.lines.push({
