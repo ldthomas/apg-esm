@@ -9,25 +9,50 @@
  */
 import ids from '../apg-lib/identifiers.js';
 import { charToHex } from '../apg-lib/utilities.js';
-    // const sysData = {
-    //   state: id.ACTIVE,
-    //   phraseLength: 0,
-    //   ruleIndex: 0,
-    //   udtIndex: 0,
-    //   lookAhead: this._lookAhead,
-    // };
+// const sysData = {
+//   state: id.ACTIVE,
+//   phraseLength: 0,
+//   ruleIndex: 0,
+//   udtIndex: 0,
+//   lookAhead: this._lookAhead,
+// };
 
-interface SysData = {
-  state: Number;
-  phraseLength: Number;
-  ruleIndex: Number;
-  udtIndex: Number;
-  lookAhead: Number;
+// interface SysData {
+//   state: Number;
+//   phraseLength: Number;
+//   ruleIndex: Number;
+//   udtIndex: Number;
+//   lookAhead: Number;
+// }
+
+interface Line {
+  lineNo: number;
+  beginChar: number;
+  length: number;
+  textLength: number;
+  endType: string;
+  invalidChars: number;
+}
+interface Error {
+  line: number;
+  char: number;
+  msg: string;
 }
 
-type Characters = number[];
+type LineEndType = 'none' | 'LF' | 'CR' | 'CRLF';
 
-function semFile(state: SysData, chars: number[], phraseIndex: number, phraseCount:number, data: object): number {
+interface ScanData {
+  lines: Line[];
+  errors: Error[];
+  textLength: number;
+  invalidCount: number;
+  endLength: number;
+  endType: LineEndType;
+  lineNo: number;
+  strict: boolean;
+}
+
+function semFile(state: number, chars: number[], phraseIndex: number, phraseCount: number, data: ScanData): number {
   if (state === ids.SEM_PRE) {
     if (phraseCount === 0) {
       data.lines.push({
@@ -49,7 +74,7 @@ function semFile(state: SysData, chars: number[], phraseIndex: number, phraseCou
   }
   return ids.SEM_OK;
 }
-function semLine(state, chars, phraseIndex, phraseCount, data) {
+function semLine(state: number, chars: number[], phraseIndex: number, phraseCount: number, data: ScanData): number {
   if (state === ids.SEM_PRE) {
     data.endLength = 0;
     data.textLength = 0;
@@ -66,13 +91,13 @@ function semLine(state, chars, phraseIndex, phraseCount, data) {
   }
   return ids.SEM_OK;
 }
-function semLineText(state, chars, phraseIndex, phraseCount, data) {
+function semLineText(state: number, chars: number[], phraseIndex: number, phraseCount: number, data: ScanData): number {
   if (state === ids.SEM_PRE) {
     data.textLength = phraseCount;
   }
   return ids.SEM_OK;
 }
-function semLastLine(state, chars, phraseIndex, phraseCount, data) {
+function semLastLine(state: number, chars: number[], phraseIndex: number, phraseCount: number, data: ScanData): number {
   if (state === ids.SEM_PRE) {
     data.endLength = 0;
     data.textLength = 0;
@@ -102,7 +127,7 @@ function semLastLine(state, chars, phraseIndex, phraseCount, data) {
   }
   return ids.SEM_OK;
 }
-function semInvalid(state, chars, phraseIndex, phraseCount, data) {
+function semInvalid(state: number, chars: number[], phraseIndex: number, phraseCount: number, data: ScanData): number {
   if (state === ids.SEM_PRE) {
     data.errors.push({
       line: data.lineNo,
@@ -112,13 +137,13 @@ function semInvalid(state, chars, phraseIndex, phraseCount, data) {
   }
   return ids.SEM_OK;
 }
-function semEnd(state, chars, phraseIndex, phraseCount, data) {
+function semEnd(state: number, chars: number[], phraseIndex: number, phraseCount: number, data: ScanData): number {
   if (state === ids.SEM_POST) {
     data.lineNo += 1;
   }
   return ids.SEM_OK;
 }
-function semLF(state, chars, phraseIndex, phraseCount, data) {
+function semLF(state: number, chars: number[], phraseIndex: number, phraseCount: number, data: ScanData): number {
   if (state === ids.SEM_PRE) {
     data.endType = 'LF';
     if (data.strict) {
@@ -131,7 +156,7 @@ function semLF(state, chars, phraseIndex, phraseCount, data) {
   }
   return ids.SEM_OK;
 }
-function semCR(state, chars, phraseIndex, phraseCount, data) {
+function semCR(state: number, chars: number[], phraseIndex: number, phraseCount: number, data: ScanData): number {
   if (state === ids.SEM_PRE) {
     data.endType = 'CR';
     if (data.strict) {
@@ -144,20 +169,35 @@ function semCR(state, chars, phraseIndex, phraseCount, data) {
   }
   return ids.SEM_OK;
 }
-function semCRLF(state, chars, phraseIndex, phraseCount, data) {
+function semCRLF(state: number, chars: number[], phraseIndex: number, phraseCount: number, data: ScanData): number {
   if (state === ids.SEM_PRE) {
     data.endType = 'CRLF';
   }
   return ids.SEM_OK;
 }
-const callbacks = [];
-callbacks.file = semFile;
-callbacks.line = semLine;
-callbacks['line-text'] = semLineText;
-callbacks['last-line'] = semLastLine;
-callbacks.invalid = semInvalid;
-callbacks.end = semEnd;
-callbacks.lf = semLF;
-callbacks.cr = semCR;
-callbacks.crlf = semCRLF;
+type Callback = (state: number, chars: number[], phraseIndex: number, phraseCount: number, data: ScanData) => number;
+
+interface CallbackMap {
+  file: Callback;
+  line: Callback;
+  'line-text': Callback;
+  'last-line': Callback;
+  invalid: Callback;
+  end: Callback;
+  lf: Callback;
+  cr: Callback;
+  crlf: Callback;
+}
+
+const callbacks: CallbackMap = {
+  file: semFile,
+  line: semLine,
+  'line-text': semLineText,
+  'last-line': semLastLine,
+  invalid: semInvalid,
+  end: semEnd,
+  lf: semLF,
+  cr: semCR,
+  crlf: semCRLF,
+};
 export { callbacks };

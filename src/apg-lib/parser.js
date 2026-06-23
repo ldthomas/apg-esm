@@ -9,6 +9,14 @@
  * Attach optional helpers (AST, Stats, Trace) before calling {@link Parser#parse}.
  */
 import id from './identifiers.js';
+import { createSysData } from './sys-data.js';
+
+/**
+ * @typedef {import('./trace.js').default} Trace
+ * @typedef {import('./traceSabnf.js').default} TraceSabnf
+ * @typedef {import('./ast.js').default} Ast
+ * @typedef {import('./stats.js').default} Stats
+ */
 
 const THIS_FILE = 'parser.js: ';
 // Validate the callback function's returned sysData values.
@@ -307,13 +315,7 @@ export default class Parser {
     this._traceSabnf?.init(this._sabnfLines, this._chars);
     this._stats?.init(this._rules, this._udts);
     this._ast?.init(this._chars);
-    const sysData = {
-      state: id.ACTIVE,
-      phraseLength: 0,
-      ruleIndex: 0,
-      udtIndex: 0,
-      lookAhead: this._lookAhead,
-    };
+    const sysData = createSysData(this._lookAhead);
     this._userData = callbackData || undefined;
     /* create a dummy opcode for the start rule */
     this._opcodes = [
