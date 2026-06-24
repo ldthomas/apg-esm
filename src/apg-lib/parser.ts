@@ -9,20 +9,25 @@
  * Attach optional helpers (AST, Stats, Trace) before calling {@link Parser#parse}.
  */
 import id from './identifiers.js';
-import { createSysData } from './sys-data.js';
-
-/**
- * @typedef {import('./trace.js').default} Trace
- * @typedef {import('./traceSabnf.js').default} TraceSabnf
- * @typedef {import('./ast.js').default} Ast
- * @typedef {import('./stats.js').default} Stats
- */
+import type {
+  AstLike,
+  GrammarObject,
+  GrammarOpcode,
+  GrammarRule,
+  GrammarUdt,
+  ParseResult,
+  ParserCallback,
+  StatsLike,
+  SysData,
+  TraceLike,
+  TraceSabnfLike,
+} from './types.js';
 
 const THIS_FILE = 'parser.js: ';
 // Validate the callback function's returned sysData values.
 // It's the user's responsibility to get them right
 // but `RNM` fails if not.
-function validateRnmCallbackResult(rule, sysData, charsLeft, down) {
+function validateRnmCallbackResult(rule: GrammarRule, sysData: SysData, charsLeft: number, down: boolean): void {
   if (sysData.phraseLength > charsLeft) {
     let str = `${THIS_FILE}opRNM(${rule.name}): callback function error: `;
     str += `sysData.phraseLength: ${sysData.phraseLength}`;
@@ -55,7 +60,7 @@ function validateRnmCallbackResult(rule, sysData, charsLeft, down) {
 
 // Validate the callback function's returned sysData values.
 // It's the user's responsibility to get it right but `UDT` fails if not.
-function validateUdtCallbackResult(udt, sysData, charsLeft) {
+function validateUdtCallbackResult(udt: GrammarUdt, sysData: SysData, charsLeft: number): void {
   if (sysData.phraseLength > charsLeft) {
     let str = `${THIS_FILE}opUDT(${udt.name}): callback function error: `;
     str += `sysData.phraseLength: ${sysData.phraseLength}`;
@@ -97,7 +102,27 @@ function validateUdtCallbackResult(udt, sysData, charsLeft) {
  * then call {@link Parser#parse} to match an input string against the grammar.
  */
 export default class Parser {
-  constructor(grammar) {
+  private _rules: GrammarRule[];
+  private _udts: GrammarUdt[];
+  private _sabnfLines: string[];
+  private _ruleCallbacks: Array<ParserCallback | null>;
+  private _udtCallbacks: Array<ParserCallback | null>;
+  private _ast: AstLike | null;
+  private _stats: StatsLike | null;
+  private _trace: TraceLike | null;
+  private _traceSabnf: TraceSabnfLike | null;
+  private _limitTreeDepth: number;
+  private _limitNodeHits: number;
+  private _opcodes: GrammarOpcode[];
+  private _chars: number[];
+  private _lookAhead: number;
+  private _treeDepth: number;
+  private _maxTreeDepth: number;
+  private _nodeHits: number;
+  private _userData: unknown;
+  private _maxMatched: number;
+
+  constructor(grammar: GrammarObject) {
     if (grammar?.grammarObject !== 'grammarObject') {
       throw new Error(`${THIS_FILE}invalid grammar object`);
     }
@@ -113,31 +138,31 @@ export default class Parser {
     this._limitTreeDepth = Infinity;
     this._limitNodeHits = Infinity;
     /* ---- clear() variables --- */
-    this._opcodes = null;
-    this._chars = null;
+    this._opcodes = [];
+    this._chars = [];
     this._lookAhead = 0;
     this._treeDepth = 0;
     this._maxTreeDepth = 0;
     this._nodeHits = 0;
-    this._userData = null;
+    this._userData = undefined;
     this._maxMatched = 0;
   }
-  _clear() {
-    this._opcodes = null;
-    this._chars = null;
+  _clear(): void {
+    this._opcodes = [];
+    this._chars = [];
     this._lookAhead = 0;
     this._treeDepth = 0;
     this._maxTreeDepth = 0;
     this._nodeHits = 0;
-    this._userData = null;
+    this._userData = undefined;
     this._maxMatched = 0;
   }
 
   /* called by parse() to initialize the array of characters codes representing the input string */
-  _initializeInputChars(input) {
+  _initializeInputChars(input: string | number[] | Uint8Array | Uint16Array | Uint32Array): void {
     /* verify and normalize input */
     if (typeof input === 'string') {
-      this._chars = Array.from(input).map((ch) => ch.codePointAt(0));
+      this._chars = Array.from(input).map((ch) => ch.codePointAt(0) ?? 0);
     } else if (input instanceof Uint8Array || input instanceof Uint16Array || input instanceof Uint32Array) {
       this._chars = Array.from(input);
     } else if (Array.isArray(input)) {
@@ -147,7 +172,7 @@ export default class Parser {
     }
   }
   /* called by parse() to initialize the start rule */
-  _initializeStartRule(startRule) {
+  _initializeStartRule(startRule: string | number): { index: number; line: number } {
     let rule;
     if (typeof startRule === 'number') {
       if (!Number.isInteger(startRule) || startRule < 0) {
@@ -170,7 +195,7 @@ export default class Parser {
     return { index: rule.index, line: line < 0 ? 0 : line };
   }
 
-  _validateUdts() {
+  _validateUdts(): void {
     /* make sure all udts have been defined - the parser can't work without them */
     const undef = this._udts.filter((_, i) => this._udtCallbacks[i] === null).map((u) => u.name);
     if (undef.length > 0) {
@@ -182,7 +207,7 @@ export default class Parser {
    * @method clearCallbacks
    * @description Resets all rule and UDT callback functions to `null`.
    */
-  clearCallbacks() {
+  clearCallbacks(): void {
     this._ruleCallbacks = Array(this._rules.length).fill(null);
     this._udtCallbacks = Array(this._udts.length).fill(null);
   }
@@ -192,7 +217,7 @@ export default class Parser {
    * @param {string} name - The rule or UDT name (case-insensitive).
    * @param {Function} fn - The callback function invoked when the parser visits that node.
    */
-  setCallback(name, fn) {
+  setCallback(name: string, fn: ParserCallback): void {
     if (typeof name !== 'string' || typeof fn !== 'function') {
       throw new Error(`${THIS_FILE}setCallback: name must be a string and fn must be a function`);
     }
@@ -216,7 +241,7 @@ export default class Parser {
    * Pass `null` to detach.
    * @param {Trace|null} trace - A `Trace` instance or `null`.
    */
-  setTrace(trace) {
+  setTrace(trace: TraceLike | null): void {
     if (!trace) {
       this._trace = null;
     } else if (trace.traceObject === 'traceObject') {
@@ -231,7 +256,7 @@ export default class Parser {
    * Pass `null` to detach.
    * @param {TraceSabnf|null} trace - A `TraceSabnf` instance or `null`.
    */
-  setTraceSabnf(trace) {
+  setTraceSabnf(trace: TraceSabnfLike | null): void {
     if (!trace) {
       this._traceSabnf = null;
     } else if (trace.traceSabnfObject === 'traceSabnfObject') {
@@ -246,7 +271,7 @@ export default class Parser {
    * Pass `null` to detach.
    * @param {Ast|null} ast - An `Ast` instance or `null`.
    */
-  setAst(ast) {
+  setAst(ast: AstLike | null): void {
     if (!ast) {
       this._ast = null;
     } else if (ast.astObject === 'astObject') {
@@ -262,7 +287,7 @@ export default class Parser {
    * Pass `null` to detach.
    * @param {Stats|null} stats - A `Stats` instance or `null`.
    */
-  setStats(stats) {
+  setStats(stats: StatsLike | null): void {
     if (!stats) {
       this._stats = null;
     } else if (stats.statsObject === 'statsObject') {
@@ -277,7 +302,7 @@ export default class Parser {
    * @description Sets the maximum parse tree depth allowed. Throws if the limit is exceeded during parsing.
    * @param {number} depth - Maximum depth (integer > 0). Default is `Infinity`.
    */
-  setMaxTreeDepth(depth) {
+  setMaxTreeDepth(depth: number): void {
     this._limitTreeDepth = Math.floor(depth);
     if (!(this._limitTreeDepth > 0)) {
       throw new Error(`parser: max tree depth must be integer > 0: ${depth}`);
@@ -290,7 +315,7 @@ export default class Parser {
    * Throws if the limit is exceeded during parsing.
    * @param {number} hits - Maximum node hits (integer > 0). Default is `Infinity`.
    */
-  setMaxNodeHits(hits) {
+  setMaxNodeHits(hits: number): void {
     this._limitNodeHits = Math.floor(hits);
     if (!(this._limitNodeHits > 0)) {
       throw new Error(`parser: max node hits must be integer > 0: ${hits}`);
@@ -306,7 +331,11 @@ export default class Parser {
    * @returns {{ success: boolean, state: number, length: number, matched: number,
    *   maxMatched: number, maxTreeDepth: number, nodeHits: number }} Parse result object.
    */
-  parse(startRule, inputChars, callbackData) {
+  parse(
+    startRule: string | number,
+    inputChars: string | number[] | Uint8Array | Uint16Array | Uint32Array,
+    callbackData?: unknown,
+  ): ParseResult {
     this._clear();
     const { index: start, line } = this._initializeStartRule(startRule);
     this._validateUdts();
@@ -315,7 +344,13 @@ export default class Parser {
     this._traceSabnf?.init(this._sabnfLines, this._chars);
     this._stats?.init(this._rules, this._udts);
     this._ast?.init(this._chars);
-    const sysData = createSysData(this._lookAhead);
+    const sysData: SysData = {
+      state: id.ACTIVE,
+      phraseLength: 0,
+      ruleIndex: 0,
+      udtIndex: 0,
+      lookAhead: this._lookAhead,
+    };
     this._userData = callbackData || undefined;
     /* create a dummy opcode for the start rule */
     this._opcodes = [
@@ -358,7 +393,7 @@ export default class Parser {
   // The `ALT` operator.
   // Executes its child nodes, from left to right, until it finds a match.
   // Fails if *all* of its child nodes fail.
-  _opALT(opIndex, phraseIndex, sysData) {
+  _opALT(opIndex: number, phraseIndex: number, sysData: SysData): void {
     const op = this._opcodes[opIndex];
     for (let i = 0; i < op.children.length; i += 1) {
       this._opExecute(op.children[i], phraseIndex, sysData);
@@ -372,7 +407,7 @@ export default class Parser {
   // Executes all of its child nodes, from left to right,
   // concatenating the matched phrases.
   // Fails if *any* child nodes fail.
-  _opCAT(opIndex, phraseIndex, sysData) {
+  _opCAT(opIndex: number, phraseIndex: number, sysData: SysData): void {
     let astLength;
     const op = this._opcodes[opIndex];
     if (this._ast) {
@@ -408,7 +443,7 @@ export default class Parser {
   // concatenating each of the matched phrases found.
   // The number of repetitions executed and its final sysData depends
   // on its `min` & `max` repetition values.
-  _opREP(opIndex, phraseIndex, sysData) {
+  _opREP(opIndex: number, phraseIndex: number, sysData: SysData): void {
     const op = this._opcodes[opIndex];
     let repCharIndex = phraseIndex;
     let repPhrase = 0;
@@ -442,7 +477,7 @@ export default class Parser {
   // It handles user-defined callback functions and `AST` nodes.
   // Note that the `AST` is a separate object, but `RNM` calls its functions to create its nodes.
   // See [`ast.js`](./ast.html) for usage.
-  _opRNM(opIndex, phraseIndex, sysData) {
+  _opRNM(opIndex: number, phraseIndex: number, sysData: SysData): void {
     let astLength;
     let astDefined;
     let savedOpcodes;
@@ -492,13 +527,13 @@ export default class Parser {
   // Simply calls the user's callback function, but operates like `RNM` with regard to the `AST`.
   // `UDT`s act as terminals for phrase recognition but as named rules for `AST` nodes.
   // See [`ast.js`](./ast.html) for usage.
-  _opUDT(opIndex, phraseIndex, sysData) {
+  _opUDT(opIndex: number, phraseIndex: number, sysData: SysData): void {
     let astLength;
     let astIndex;
     let astDefined;
     const op = this._opcodes[opIndex];
     const udt = this._udts[op.index];
-    sysData.UdtIndex = udt.index;
+    sysData.udtIndex = udt.index;
     /* ignore AST in look ahead */
     if (this._lookAhead === 0) {
       astDefined = this._ast && this._ast.udtDefined(op.index);
@@ -526,7 +561,7 @@ export default class Parser {
   // Executes its single child node, returning the EMPTY state
   // if it succeeds and NOMATCH if it fails.
   // *Always* backtracks on any matched phrase and returns EMPTY on success.
-  _opAND(opIndex, phraseIndex, sysData) {
+  _opAND(opIndex: number, phraseIndex: number, sysData: SysData): void {
     this._lookAhead++;
     this._opExecute(opIndex + 1, phraseIndex, sysData);
     this._lookAhead--;
@@ -550,7 +585,7 @@ export default class Parser {
   // if it *fails* and NOMATCH if it succeeds.
   // *Always* backtracks on any matched phrase and returns EMPTY
   // on success (failure of its child node).
-  _opNOT(opIndex, phraseIndex, sysData) {
+  _opNOT(opIndex: number, phraseIndex: number, sysData: SysData): void {
     this._lookAhead++;
     this._opExecute(opIndex + 1, phraseIndex, sysData);
     this._lookAhead--;
@@ -571,7 +606,7 @@ export default class Parser {
   // The `TRG` operator.
   // Succeeds if the single first character of the phrase is
   // within the `min - max` range.
-  _opTRG(opIndex, phraseIndex, sysData) {
+  _opTRG(opIndex: number, phraseIndex: number, sysData: SysData): void {
     const op = this._opcodes[opIndex];
     sysData.state = id.NOMATCH;
     if (phraseIndex < this._chars.length) {
@@ -589,7 +624,7 @@ export default class Parser {
   // operators by `apg`.
   // Phrase length of zero is not allowed.
   // Empty phrases can only be defined with `TLS` operators.
-  _opTBS(opIndex, phraseIndex, sysData) {
+  _opTBS(opIndex: number, phraseIndex: number, sysData: SysData): void {
     const op = this._opcodes[opIndex];
     const len = op.string.length;
     sysData.state = id.NOMATCH;
@@ -610,7 +645,7 @@ export default class Parser {
   // `TLS` is the only operator that explicitly allows empty phrases.
   // `apg` will fail for empty `TBS`, case-sensitive strings (`''`) or
   // zero repetitions (`0*0RuleName` or `0RuleName`).
-  _opTLS(opIndex, phraseIndex, sysData) {
+  _opTLS(opIndex: number, phraseIndex: number, sysData: SysData): void {
     const op = this._opcodes[opIndex];
     sysData.state = id.NOMATCH;
     const len = op.string.length;
@@ -640,7 +675,7 @@ export default class Parser {
   // Tracing and statistics are handled in separate objects.
   // However, the parser calls their API to build the object data records.
   // See [`trace.js`](./trace.html) and [`stats.js`](./stats.html) for their usage.
-  _opExecute(opIndex, phraseIndex, sysData) {
+  _opExecute(opIndex: number, phraseIndex: number, sysData: SysData): void {
     const op = this._opcodes[opIndex];
     this._nodeHits += 1;
     if (this._nodeHits > this._limitNodeHits) {

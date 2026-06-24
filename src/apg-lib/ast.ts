@@ -11,11 +11,25 @@
  */
 import id from './identifiers.js';
 import { charsToDec, charsToAscii, charsToHex, charsToUnicode } from './utilities.js';
+import type { AstCallback, GrammarObject, GrammarRule, GrammarUdt } from './types.js';
 
 const THIS_FILE = 'ast.js: ';
 
+type AstCallbackRegistration = AstCallback | true | null;
+
+interface AstRecord {
+  name: string;
+  thisIndex: number;
+  thatIndex: number;
+  state: number;
+  callbackIndex: number;
+  phraseIndex: number;
+  phraseLength: number;
+  stack: number;
+}
+
 /* helper for XML display */
-function indent(n) {
+function indent(n: number): string {
   let ret = '';
   for (let i = 0; i < n; i += 1) {
     ret += ' ';
@@ -30,13 +44,21 @@ function indent(n) {
  * functions with them. After parsing, call {@link Ast#translate} to apply the callbacks.
  */
 export default class Ast {
-  constructor(grammar) {
+  private _rules: GrammarRule[];
+  private _udts: GrammarUdt[];
+  private _chars: number[];
+  private callbacks: AstCallbackRegistration[];
+  private _stack: number[];
+  private _records: AstRecord[];
+  public astObject: string;
+
+  constructor(grammar: GrammarObject) {
     if (grammar?.grammarObject !== 'grammarObject') {
       throw new Error(`${THIS_FILE}invalid grammar object`);
     }
     this._rules = grammar.rules;
     this._udts = grammar.udts;
-    this._chars = null;
+    this._chars = [];
     this.callbacks = Array(this._rules.length + this._udts.length).fill(null);
     this._stack = [];
     this._records = [];
@@ -44,7 +66,7 @@ export default class Ast {
   }
 
   /* called by the parser to initialize the AST with the input characters */
-  init(chars) {
+  init(chars: number[]): void {
     this._chars = chars;
   }
 
@@ -55,8 +77,8 @@ export default class Ast {
    * @param {string} name - The rule or UDT name (case-insensitive).
    * @param {Function|true} fn - Callback function, or `true` to enable capture without a callback.
    */
-  setCallback(name, fn) {
-    if (typeof name !== 'string' || typeof fn !== 'function') {
+  setCallback(name: string, fn: AstCallback | true): void {
+    if (typeof name !== 'string' || (fn !== true && typeof fn !== 'function')) {
       throw new Error(`${THIS_FILE}setCallback: name must be a string and fn must be a function`);
     }
     const lower = name.toLowerCase();
@@ -73,28 +95,28 @@ export default class Ast {
     throw new Error(`${THIS_FILE}setCallback: '${name}' is not a recognized rule or UDT name`);
   }
   /* AST node definitions - called by the parser's `RNM` operator */
-  ruleDefined(index) {
+  ruleDefined(index: number): boolean {
     return Boolean(this.callbacks[index]);
   }
 
   /* AST node definitions - called by the parser's `UDT` operator */
-  udtDefined(index) {
+  udtDefined(index: number): boolean {
     return Boolean(this.callbacks[this._rules.length + index]);
   }
 
   /* called by the parser's `RNM` & `UDT` operators */
   /* builds a record for the downward traversal of the node */
-  down(callbackIndex, name) {
+  down(callbackIndex: number, name: string): number {
     const thisIndex = this._records.length;
     this._stack.push(thisIndex);
     this._records.push({
       name,
       thisIndex,
-      thatIndex: null,
+      thatIndex: -1,
       state: id.SEM_PRE,
       callbackIndex,
-      phraseIndex: null,
-      phraseLength: null,
+      phraseIndex: -1,
+      phraseLength: -1,
       stack: this._stack.length,
     });
     return thisIndex;
@@ -102,9 +124,12 @@ export default class Ast {
 
   /* called by the parser's `RNM` & `UDT` operators */
   /* builds a record for the upward traversal of the node */
-  up(callbackIndex, name, phraseIndex, phraseLength) {
+  up(callbackIndex: number, name: string, phraseIndex: number, phraseLength: number): number {
     const thisIndex = this._records.length;
     const thatIndex = this._stack.pop();
+    if (thatIndex === undefined) {
+      throw new Error(`${THIS_FILE}AST stack underflow`);
+    }
     this._records.push({
       name,
       thisIndex,
@@ -127,19 +152,21 @@ export default class Ast {
    * functions to apply semantic actions to the matched phrases.
    * @param {*} [data] - Optional user-defined data passed through to every callback function.
    */
-  translate(data) {
-    let ret;
-    let callback;
-    let record;
+  translate(data: unknown): void {
+    let ret: number | undefined;
+    let callback: AstCallbackRegistration;
+    let record: AstRecord;
     for (let i = 0; i < this._records.length; i += 1) {
       record = this._records[i];
       callback = this.callbacks[record.callbackIndex];
       if (record.state === id.SEM_PRE) {
-        ret = callback(id.SEM_PRE, this._chars, record.phraseIndex, record.phraseLength, data);
-        if (ret === id.SEM_SKIP) {
-          i = record.thatIndex;
+        if (typeof callback === 'function') {
+          ret = callback(id.SEM_PRE, this._chars, record.phraseIndex, record.phraseLength, data);
+          if (ret === id.SEM_SKIP) {
+            i = record.thatIndex;
+          }
         }
-      } else {
+      } else if (typeof callback === 'function') {
         callback(id.SEM_POST, this._chars, record.phraseIndex, record.phraseLength, data);
       }
     }
@@ -147,7 +174,7 @@ export default class Ast {
 
   /* called by the parser to reset the length of the records array */
   /* necessary on backtracking */
-  setLength(length) {
+  setLength(length: number): void {
     this._records.length = length;
     if (length > 0) {
       this._stack.length = this._records[length - 1].stack;
@@ -157,7 +184,7 @@ export default class Ast {
   }
 
   /* called by the parser to get the length of the records array */
-  getLength() {
+  getLength(): number {
     return this._records.length;
   }
 
@@ -168,8 +195,8 @@ export default class Ast {
    *   `'ascii'` (default), `'decimal'`, `'hexadecimal'`, or `'unicode'`.
    * @returns {string} Well-formed XML string representing the AST.
    */
-  toXml(modeArg) {
-    let display = charsToDec;
+  toXml(modeArg?: string): string {
+    let display: (chars: number[], beg?: number, len?: number) => string = charsToDec;
     let caption = 'decimal integer character codes';
     if (typeof modeArg === 'string' && modeArg.length >= 3) {
       const mode = modeArg.slice(0, 3).toLowerCase();

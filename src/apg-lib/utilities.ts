@@ -14,8 +14,8 @@ const THIS_FILE = 'utilities.js: ';
 
 /* translate (implied) phrase beginning character and length to actual first and last character indexes */
 /* used by multiple phrase handling functions */
-function getBounds(length, begArg, len) {
-  let end;
+function getBounds(length: number, begArg: number | undefined, len: number | undefined): { beg: number; end: number } {
+  let end: number;
   let beg = begArg;
   const TRUE = true;
   while (TRUE) {
@@ -59,7 +59,7 @@ function getBounds(length, begArg, len) {
  * @param {number} [phraseLength] - Number of characters to translate. Defaults to end of array.
  * @returns {string} The resulting string, or `''` if the range is empty.
  */
-export function charsToString(chars, phraseIndex, phraseLength) {
+export function charsToString(chars: number[], phraseIndex?: number, phraseLength?: number): string {
   let beg;
   let end;
   if (typeof phraseIndex === 'number') {
@@ -95,7 +95,7 @@ export function charsToString(chars, phraseIndex, phraseLength) {
  * @param {string} string - The input string.
  * @returns {number[]} Array of integer Unicode code-point values.
  */
-export function stringToChars(string) {
+export function stringToChars(string: string): number[] {
   return Array.from(string).map((ch) => ch.codePointAt(0));
 }
 /**
@@ -104,7 +104,7 @@ export function stringToChars(string) {
  * @param {number} type - An opcode type constant from {@link module:identifiers}.
  * @returns {string} The opcode name (e.g. `'ALT'`, `'CAT'`, `'RNM'`, etc.).
  */
-export function opcodeToString(type) {
+export function opcodeToString(type: number): string {
   let ret = 'unknown';
   switch (type) {
     case id.ALT:
@@ -137,21 +137,6 @@ export function opcodeToString(type) {
     case id.TLS:
       ret = 'TLS';
       break;
-    case id.BKR:
-      ret = 'BKR';
-      break;
-    case id.BKA:
-      ret = 'BKA';
-      break;
-    case id.BKN:
-      ret = 'BKN';
-      break;
-    case id.ABG:
-      ret = 'ABG';
-      break;
-    case id.AEN:
-      ret = 'AEN';
-      break;
     default:
       throw new Error('unrecognized opcode');
   }
@@ -163,7 +148,7 @@ export function opcodeToString(type) {
  * @param {number} state - A state constant from {@link module:identifiers} (`ACTIVE`, `MATCH`, `EMPTY`, or `NOMATCH`).
  * @returns {string} The state name.
  */
-export function stateToString(state) {
+export function stateToString(state: number): string {
   let ret = 'unknown';
   switch (state) {
     case id.ACTIVE:
@@ -189,7 +174,7 @@ export function stateToString(state) {
  * Control characters are represented by their abbreviation (e.g. `'NUL'`, `'LF'`);
  * printable characters are their literal HTML-escaped form.
  */
-export const asciiChars = [
+export const asciiChars: string[] = [
   'NUL',
   'SOH',
   'STX',
@@ -326,7 +311,7 @@ export const asciiChars = [
  * @param {number} char - Integer character code.
  * @returns {string} Uppercase hex string.
  */
-export function charToHex(char) {
+export function charToHex(char: number): string {
   let ch = char.toString(16).toUpperCase();
   switch (ch.length) {
     case 1:
@@ -356,7 +341,7 @@ export function charToHex(char) {
  * @param {number} [len] - Number of characters. Defaults to end of array.
  * @returns {string} Comma-separated decimal string, e.g. `'65,66,67'`.
  */
-export function charsToDec(chars, beg, len) {
+export function charsToDec(chars: number[], beg?: number, len?: number): string {
   let ret = '';
   if (!Array.isArray(chars)) {
     throw new Error(`${THIS_FILE}charsToDec: input must be an array of integers`);
@@ -378,7 +363,7 @@ export function charsToDec(chars, beg, len) {
  * @param {number} [len] - Number of characters. Defaults to end of array.
  * @returns {string} Comma-separated hex string, e.g. `'\\x41,\\x42,\\x43'`.
  */
-export function charsToHex(chars, beg, len) {
+export function charsToHex(chars: number[], beg?: number, len?: number): string {
   let ret = '';
   if (!Array.isArray(chars)) {
     throw new Error(`${THIS_FILE}charsToHex: input must be an array of integers`);
@@ -392,21 +377,21 @@ export function charsToHex(chars, beg, len) {
   }
   return ret;
 }
-export function charsToHtmlEntities(chars, beg, len) {
-  let ret = '';
-  if (!Array.isArray(chars)) {
-    throw new Error(`${THIS_FILE}charsToHtmlEntities: input must be an array of integers`);
-  }
-  const bounds = getBounds(chars.length, beg, len);
-  if (bounds.end > bounds.beg) {
-    for (let i = bounds.beg; i < bounds.end; i += 1) {
-      ret += `&#x${chars[i].toString(16)};`;
-    }
-  }
-  return ret;
-}
+// export function charsToHtmlEntities(chars, beg, len) {
+//   let ret = '';
+//   if (!Array.isArray(chars)) {
+//     throw new Error(`${THIS_FILE}charsToHtmlEntities: input must be an array of integers`);
+//   }
+//   const bounds = getBounds(chars.length, beg, len);
+//   if (bounds.end > bounds.beg) {
+//     for (let i = bounds.beg; i < bounds.end; i += 1) {
+//       ret += `&#x${chars[i].toString(16)};`;
+//     }
+//   }
+//   return ret;
+// }
 // Translates a sub-array of character codes to Unicode display format.
-function isUnicode(char) {
+function isUnicode(char: number): boolean {
   if (char >= 0xd800 && char <= 0xdfff) {
     return false;
   }
@@ -423,7 +408,7 @@ function isUnicode(char) {
  * @param {number} [len] - Number of characters. Defaults to end of array.
  * @returns {string} HTML character reference string, e.g. `'&#65;&#66;'`.
  */
-export function charsToUnicode(chars, beg, len) {
+export function charsToUnicode(chars: number[], beg?: number, len?: number): string {
   let ret = '';
   if (!Array.isArray(chars)) {
     throw new Error(`${THIS_FILE}charsToUnicode: input must be an array of integers`);
@@ -448,7 +433,7 @@ export function charsToUnicode(chars, beg, len) {
  * @param {number} [len] - Number of characters. Defaults to end of array.
  * @returns {string} Comma-separated `\uXXXX` escape string.
  */
-export function charsToJsUnicode(chars, beg, len) {
+export function charsToJsUnicode(chars: number[], beg?: number, len?: number): string {
   let ret = '';
   if (!Array.isArray(chars)) {
     throw new Error(`${THIS_FILE}charsToJsUnicode: input must be an array of integers`);
@@ -463,7 +448,7 @@ export function charsToJsUnicode(chars, beg, len) {
   return ret;
 }
 // Translates a sub-array of character codes to printing ASCII character display format.
-export function charsToAscii(chars, beg, len) {
+export function charsToAscii(chars: number[], beg?: number, len?: number): string {
   let ret = '';
   if (!Array.isArray(chars)) {
     throw new Error(`${THIS_FILE}charsToAscii: input must be an array of integers`);

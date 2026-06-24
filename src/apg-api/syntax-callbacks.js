@@ -9,14 +9,14 @@
  */
 import ids from '../apg-lib/identifiers.js';
 import { charsToString } from '../apg-lib/utilities.js';
-import { createSysData } from '../apg-lib/sys-data.js';
+// import { createSysData } from '../apg-lib/sys-data.js';
 
 const THIS_FILE = 'syntax-callbacks.js: ';
 let topAlt;
 
-function createResultState(lookAhead = 0) {
-  return createSysData(lookAhead);
-}
+// function createResultState(lookAhead = 0) {
+//   return createSysData(lookAhead);
+// }
 
 /* syntax, RNM, callback functions */
 function synFile(result, chars, phraseIndex, data) {
