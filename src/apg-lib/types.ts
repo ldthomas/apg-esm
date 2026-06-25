@@ -12,7 +12,7 @@ export interface GrammarRule {
   name: string;
   lower: string;
   index: number;
-  opcodes: GrammarOpcode[];
+  opcodes?: GrammarOpcode[];
 }
 
 export interface GrammarUdt {
@@ -31,6 +31,7 @@ export interface GrammarOpcode {
   min?: number;
   max?: number;
   string?: number[];
+  empty?: boolean;
 }
 
 export interface GrammarObject {
