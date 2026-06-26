@@ -9,21 +9,6 @@
  */
 import ids from '../apg-lib/identifiers.js';
 import { charToHex } from '../apg-lib/utilities.js';
-// const sysData = {
-//   state: id.ACTIVE,
-//   phraseLength: 0,
-//   ruleIndex: 0,
-//   udtIndex: 0,
-//   lookAhead: this._lookAhead,
-// };
-
-// interface SysData {
-//   state: Number;
-//   phraseLength: Number;
-//   ruleIndex: Number;
-//   udtIndex: Number;
-//   lookAhead: Number;
-// }
 
 interface Line {
   lineNo: number;

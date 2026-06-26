@@ -6,22 +6,23 @@
  */
 import { charsToString } from './utilities.js';
 import id from './identifiers.js';
+import type { GrammarOpcode, GrammarRule, GrammarUdt } from './types.js';
 
 const THIS_FILE = 'trace.js ';
 const MAX_PHRASE = 100;
 
-function indent(n) {
+function indent(n: number): string {
   if (n <= 0) return '';
   return '....|'.repeat(Math.floor(n / 5)) + '.'.repeat(n % 5);
 }
 
-function lookAheadIndent(n) {
+function lookAheadIndent(n: number): string {
   if (n <= 0) return '';
   return '****~'.repeat(Math.floor(n / 5)) + '*'.repeat(n % 5);
 }
 
-function opName(op, rules, udts) {
-  let name;
+function opName(op: GrammarOpcode, rules: GrammarRule[], udts: GrammarUdt[]): string {
+  let name: string;
   switch (op.type) {
     case id.ALT:
       name = 'ALT';
@@ -37,27 +38,35 @@ function opName(op, rules, udts) {
       }
       break;
     case id.RNM:
-      name = `RNM(${rules[op.index].name})`;
+      name = `RNM(${rules[op.index ?? 0]?.name ?? ''})`;
       break;
     case id.TRG:
       name = `TRG(${op.min},${op.max})`;
       break;
     case id.TBS:
-      if (op.string.length > 6) {
-        name = `TBS(${charsToString(op.string, 0, 3).replace(/\r/g, '\\r').replace(/\n/g, '\\n')}...)`;
+      if ((op.string?.length ?? 0) > 6) {
+        name = `TBS(${charsToString(op.string ?? [], 0, 3)
+          .replace(/\r/g, '\\r')
+          .replace(/\n/g, '\\n')}...)`;
       } else {
-        name = `TBS(${charsToString(op.string, 0, 6).replace(/\r/g, '\\r').replace(/\n/g, '\\n')})`;
+        name = `TBS(${charsToString(op.string ?? [], 0, 6)
+          .replace(/\r/g, '\\r')
+          .replace(/\n/g, '\\n')})`;
       }
       break;
     case id.TLS:
-      if (op.string.length > 6) {
-        name = `TLS(${charsToString(op.string, 0, 3).replace(/\r/g, '\\r').replace(/\n/g, '\\n')}...)`;
+      if ((op.string?.length ?? 0) > 6) {
+        name = `TLS(${charsToString(op.string ?? [], 0, 3)
+          .replace(/\r/g, '\\r')
+          .replace(/\n/g, '\\n')}...)`;
       } else {
-        name = `TLS(${charsToString(op.string, 0, 6).replace(/\r/g, '\\r').replace(/\n/g, '\\n')})`;
+        name = `TLS(${charsToString(op.string ?? [], 0, 6)
+          .replace(/\r/g, '\\r')
+          .replace(/\n/g, '\\n')})`;
       }
       break;
     case id.UDT:
-      name = `UDT(${udts[op.index].name})`;
+      name = `UDT(${udts[op.index ?? 0]?.name ?? ''})`;
       break;
     case id.AND:
       name = 'AND';
@@ -77,24 +86,25 @@ function opName(op, rules, udts) {
  * visited during a parse. Useful for debugging grammars and parsers.
  */
 export default class Trace {
-  constructor() {
-    this.traceObject = 'traceObject';
-    this._rules = undefined;
-    this._udts = undefined;
-    this._rules = undefined;
-    this._chars = undefined;
-    this._udts = undefined;
-    this._out = '';
-    this._treeDepth = 0;
+  public traceObject = 'traceObject';
+
+  private _rules: GrammarRule[] = [];
+
+  private _udts: GrammarUdt[] = [];
+
+  private _chars: number[] = [];
+
+  private _out = '';
+
+  private _treeDepth = 0;
+
+  init(rules: GrammarRule[], udts: GrammarUdt[], chars: number[]): void {
+    this._rules = rules;
+    this._udts = udts;
+    this._chars = chars;
   }
 
-  init(r, u, c) {
-    this._rules = r;
-    this._udts = u;
-    this._chars = c;
-  }
-
-  down(op, offset, lookAhead) {
+  down(op: GrammarOpcode, offset: number, lookAhead: number): void {
     const lead =
       lookAhead > 0 || op.type === id.AND || op.type === id.NOT
         ? lookAheadIndent(this._treeDepth)
@@ -109,13 +119,13 @@ export default class Trace {
     this._treeDepth += 1;
   }
 
-  up(op, state, offset, phraseLength, lookAhead) {
+  up(op: GrammarOpcode, state: number, offset: number, phraseLength: number, lookAhead: number): void {
     const thisFunc = `${THIS_FILE}trace.up: `;
     this._treeDepth -= 1;
     const lead = lookAhead > 0 ? lookAheadIndent(this._treeDepth) : indent(this._treeDepth);
-    let len;
-    let phrase;
-    let st;
+    let len: number;
+    let phrase: string;
+    let st: string;
     const ol = `(${offset},${phraseLength})|`;
     switch (state) {
       case id.EMPTY:
@@ -147,7 +157,7 @@ export default class Trace {
    * @description Returns the full trace as a formatted string.
    * @returns {string} The input string followed by the parse tree node trace.
    */
-  display() {
+  display(): string {
     let out = 'INPUT STRING\n';
     out += charsToString(this._chars, 0, this._chars.length).replace(/\r/g, '\\r').replace(/\n/g, '\\n');
     out += '\n\nPARSE TREE NODE TRACE\n';

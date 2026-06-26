@@ -6,15 +6,12 @@
  */
 import { charsToString } from './utilities.js';
 import id from './identifiers.js';
+import type { GrammarOpcode } from './types.js';
 
 const THIS_FILE = 'traceSabnf.js: ';
 const MAX_PHRASE = 100;
-const DOWN = '>>>';
-const UPMATCH = '<M<';
-const UPNOMATCH = '<N<';
-const UPEMPTY = '<E<';
 
-function lead(lineno, offset, s) {
+function lead(lineno: number, offset: number, s?: number): string {
   let state = '-';
   switch (s) {
     case id.MATCH:
@@ -32,7 +29,7 @@ function lead(lineno, offset, s) {
   return `${l}: ${o}: ${state}: `;
 }
 
-function opToString(op) {
+function opToString(op: GrammarOpcode): string {
   switch (op.type) {
     case id.ALT:
       return 'ALT';
@@ -54,6 +51,8 @@ function opToString(op) {
       return 'AND';
     case id.NOT:
       return 'NOT';
+    default:
+      return 'UNKNOWN';
   }
 }
 /**
@@ -62,34 +61,38 @@ function opToString(op) {
  * annotated with the corresponding position in the SABNF grammar source text.
  */
 export default class TraceSabnf {
-  constructor() {
-    this.traceSabnfObject = 'traceSabnfObject';
-  }
+  public traceSabnfObject = 'traceSabnfObject';
+
+  private _sabnf: string[] = [];
+
+  private _chars: number[] = [];
+
+  private _out: string[] = [];
 
   // sabnf is SABNF grammar text split into array of lines (Parser, _initializeTraceSabnf)
-  init(sabnf, c) {
+  init(sabnf: string[], c: number[]): void {
     this._sabnf = sabnf;
     this._chars = c;
     this._out = [];
   }
 
-  down(op) {
-    let gline = this._sabnf[op.gl];
+  down(op: GrammarOpcode): void {
+    let gline = this._sabnf[op.gl] ?? '';
     gline = gline.slice(0, op.go) + '>' + opToString(op) + '>' + gline.slice(op.go);
     this._out.push(lead(op.gl, op.go) + gline);
   }
 
-  up(op, state, offset, length) {
-    let phrase = null;
+  up(op: GrammarOpcode, state: number, offset: number, length: number): void {
+    let phrase: string | null = null;
     if (state === id.MATCH || state === id.EMPTY) {
       const len = Math.min(length, MAX_PHRASE);
       phrase = charsToString(this._chars, offset, len).replace(/\r/g, '\\r').replace(/\n/g, '\\n');
-      if (length > MAX_PHRASE) phrase = phrase + '...';
+      if (length > MAX_PHRASE) phrase = `${phrase}...`;
     }
-    let gline = this._sabnf[op.gl];
+    let gline = this._sabnf[op.gl] ?? '';
     gline = gline.slice(0, op.go) + '<' + opToString(op) + '<' + gline.slice(op.go);
     if (phrase) {
-      gline += ' : ' + phrase;
+      gline += ` : ${phrase}`;
     }
     this._out.push(lead(op.gl, op.go, state) + gline);
   }
@@ -99,7 +102,7 @@ export default class TraceSabnf {
    * @description Returns the annotated grammar trace as a formatted string.
    * @returns {string} Grammar trace followed by the full grammar text.
    */
-  display() {
+  display(): string {
     let out = 'GRAMMAR TRACE\n';
     out += this._out.join('\n');
     out += '\n\nGRAMMAR TEXT\n';

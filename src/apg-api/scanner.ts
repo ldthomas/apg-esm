@@ -13,29 +13,48 @@ import Ast from '../apg-lib/ast.js';
 import ScannerGrammar from './scanner-grammar.js';
 import { callbacks } from './scanner-callbacks.js';
 
-const THIS_FILE = 'scanner.js: ';
+export interface ScanError {
+  line: number;
+  char: number;
+  msg: string;
+}
+
+export interface LineDescriptor {
+  lineNo: number;
+  beginChar: number;
+  length: number;
+  textLength: number;
+  endType: string;
+  invalidChars: number;
+}
+
+interface ScanData {
+  lines: LineDescriptor[];
+  lineNo: number;
+  errors: ScanError[];
+  strict: boolean;
+}
 
 /**
  * @function scanner
  * @description Scans an SABNF grammar character array for invalid characters and catalogs its lines.
  * @param {number[]} chars - Array of integer character codes representing the SABNF grammar text.
- * @param {Object[]} errors - Array to which error objects `{ line, char, msg }` are appended.
+ * @param {ScanError[]} errors - Array to which error objects `{ line, char, msg }` are appended.
  * @param {boolean} [strict] - If `true`, every line (including the last) must end with CRLF (`\r\n`).
- * @returns {Object[]} Array of line descriptor objects with `lineNo`, `beginChar`, `length`,
+ * @returns {LineDescriptor[]} Array of line descriptor objects with `lineNo`, `beginChar`, `length`,
  *   `textLength`, `endType`, and `invalidChars` properties.
  */
-export default function scanner(chars, errors, strict) {
+export default function scanner(chars: number[], errors: ScanError[], strict?: boolean): LineDescriptor[] {
   const grammar = new ScannerGrammar();
 
   /* Scan the grammar for character code errors and catalog the lines. */
-  const lines = [];
+  const lines: LineDescriptor[] = [];
   const parser = new Parser(grammar);
   const ast = new Ast(grammar);
+
   // register callbacks individually on the AST so the AST can validate names
-  if (callbacks && typeof callbacks === 'object') {
-    Object.keys(callbacks).forEach((name) => {
-      ast.setCallback(name, callbacks[name]);
-    });
+  for (const [name, callback] of Object.entries(callbacks)) {
+    ast.setCallback(name, callback);
   }
 
   /* parse the input SABNF grammar */
@@ -49,11 +68,11 @@ export default function scanner(chars, errors, strict) {
     });
     return lines;
   }
-  const data = {
+  const data: ScanData = {
     lines,
     lineNo: 0,
     errors,
-    strict: !!strict,
+    strict: Boolean(strict),
   };
 
   /* translate (analyze) the input SABNF grammar */
