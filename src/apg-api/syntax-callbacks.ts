@@ -9,17 +9,57 @@
  */
 import ids from '../apg-lib/identifiers.js';
 import { charsToString } from '../apg-lib/utilities.js';
-// import { createSysData } from '../apg-lib/sys-data.js';
+import type { ParserCallback } from '../apg-lib/types.js';
 
 const THIS_FILE = 'syntax-callbacks.js: ';
-let topAlt;
 
-// function createResultState(lookAhead = 0) {
-//   return createSysData(lookAhead);
-// }
+interface SyntaxErrorEntry {
+  line: number;
+  char: number;
+  msg: string;
+}
+
+interface SyntaxData {
+  altStack: AltState[];
+  repCount: number;
+  ruleCount: number;
+  errors: SyntaxErrorEntry[];
+  strict: boolean;
+  findLine(lines: Array<{ beginChar: number; length: number }>, charIndex: number, charLength: number): number;
+  charsLength: number;
+  lines: Array<{ beginChar: number; length: number }>;
+  stringTabChar: number | false;
+}
+
+interface AltState {
+  groupOpen: number | null;
+  groupError: boolean;
+  optionOpen: number | null;
+  optionError: boolean;
+  tlsOpen: number | null;
+  clsOpen: number | null;
+  prosValOpen: number | null;
+  basicError: boolean;
+}
+
+let topAlt: AltState = {
+  groupOpen: null,
+  groupError: false,
+  optionOpen: null,
+  optionError: false,
+  tlsOpen: null,
+  clsOpen: null,
+  prosValOpen: null,
+  basicError: false,
+};
+
+function toCharIndex(value: number | null): number {
+  return value ?? -1;
+}
 
 /* syntax, RNM, callback functions */
-function synFile(result, chars, phraseIndex, data) {
+const synFile: ParserCallback = (result, chars, phraseIndex, userData): void => {
+  const data = userData as SyntaxData;
   switch (result.state) {
     case ids.ACTIVE:
       data.altStack = [];
@@ -47,8 +87,9 @@ function synFile(result, chars, phraseIndex, data) {
     default:
       throw new Error(`${THIS_FILE}synFile: unrecognized case.`);
   }
-}
-function synRule(result, chars, phraseIndex, data) {
+};
+const synRule: ParserCallback = (result, chars, phraseIndex, userData): void => {
+  const data = userData as SyntaxData;
   switch (result.state) {
     case ids.ACTIVE:
       data.altStack.length = 0;
@@ -74,8 +115,9 @@ function synRule(result, chars, phraseIndex, data) {
     default:
       throw new Error(`${THIS_FILE}synFile: unrecognized case.`);
   }
-}
-function synRuleError(result, chars, phraseIndex, data) {
+};
+const synRuleError: ParserCallback = (result, chars, phraseIndex, userData): void => {
+  const data = userData as SyntaxData;
   switch (result.state) {
     case ids.ACTIVE:
       break;
@@ -93,8 +135,9 @@ function synRuleError(result, chars, phraseIndex, data) {
     default:
       throw new Error(`${THIS_FILE}synFile: unrecognized case.`);
   }
-}
-function synRuleNameError(result, chars, phraseIndex, data) {
+};
+const synRuleNameError: ParserCallback = (result, chars, phraseIndex, userData): void => {
+  const data = userData as SyntaxData;
   switch (result.state) {
     case ids.ACTIVE:
       break;
@@ -112,8 +155,9 @@ function synRuleNameError(result, chars, phraseIndex, data) {
     default:
       throw new Error(`${THIS_FILE}synFile: unrecognized case.`);
   }
-}
-function synDefinedAsError(result, chars, phraseIndex, data) {
+};
+const synDefinedAsError: ParserCallback = (result, chars, phraseIndex, userData): void => {
+  const data = userData as SyntaxData;
   switch (result.state) {
     case ids.ACTIVE:
       break;
@@ -131,8 +175,9 @@ function synDefinedAsError(result, chars, phraseIndex, data) {
     default:
       throw new Error(`${THIS_FILE}synFile: unrecognized case.`);
   }
-}
-function synAndOp(result, chars, phraseIndex, data) {
+};
+const synAndOp: ParserCallback = (result, chars, phraseIndex, userData): void => {
+  const data = userData as SyntaxData;
   switch (result.state) {
     case ids.ACTIVE:
       break;
@@ -152,8 +197,9 @@ function synAndOp(result, chars, phraseIndex, data) {
     default:
       throw new Error(`${THIS_FILE}synFile: unrecognized case.`);
   }
-}
-function synNotOp(result, chars, phraseIndex, data) {
+};
+const synNotOp: ParserCallback = (result, chars, phraseIndex, userData): void => {
+  const data = userData as SyntaxData;
   switch (result.state) {
     case ids.ACTIVE:
       break;
@@ -173,8 +219,9 @@ function synNotOp(result, chars, phraseIndex, data) {
     default:
       throw new Error(`${THIS_FILE}synFile: unrecognized case.`);
   }
-}
-function synUdtOp(result, chars, phraseIndex, data) {
+};
+const synUdtOp: ParserCallback = (result, chars, phraseIndex, userData): void => {
+  const data = userData as SyntaxData;
   switch (result.state) {
     case ids.ACTIVE:
       break;
@@ -195,8 +242,9 @@ function synUdtOp(result, chars, phraseIndex, data) {
     default:
       throw new Error(`${THIS_FILE}synFile: unrecognized case.`);
   }
-}
-function synTlsOpen(result, chars, phraseIndex) {
+};
+const synTlsOpen: ParserCallback = (result, chars, phraseIndex, userData): void => {
+  const data = userData as SyntaxData;
   switch (result.state) {
     case ids.ACTIVE:
       break;
@@ -210,8 +258,9 @@ function synTlsOpen(result, chars, phraseIndex) {
     default:
       throw new Error(`${THIS_FILE}synFile: unrecognized case.`);
   }
-}
-function synTlsString(result, chars, phraseIndex, data) {
+};
+const synTlsString: ParserCallback = (result, chars, phraseIndex, userData): void => {
+  const data = userData as SyntaxData;
   switch (result.state) {
     case ids.ACTIVE:
       data.stringTabChar = false;
@@ -223,7 +272,7 @@ function synTlsString(result, chars, phraseIndex, data) {
     case ids.MATCH:
       if (data.stringTabChar !== false) {
         data.errors.push({
-          line: data.findLine(data.lines, data.stringTabChar),
+          line: data.findLine(data.lines, data.stringTabChar, data.charsLength),
           char: data.stringTabChar,
           msg: "Tab character (\\t, x09) not allowed in literal string (see 'quoted-string' definition, RFC 7405.)",
         });
@@ -232,8 +281,9 @@ function synTlsString(result, chars, phraseIndex, data) {
     default:
       throw new Error(`${THIS_FILE}synFile: unrecognized case.`);
   }
-}
-function synStringTab(result, chars, phraseIndex, data) {
+};
+const synStringTab: ParserCallback = (result, chars, phraseIndex, userData): void => {
+  const data = userData as SyntaxData;
   switch (result.state) {
     case ids.ACTIVE:
       break;
@@ -247,8 +297,9 @@ function synStringTab(result, chars, phraseIndex, data) {
     default:
       throw new Error(`${THIS_FILE}synFile: unrecognized case.`);
   }
-}
-function synTlsClose(result, chars, phraseIndex, data) {
+};
+const synTlsClose: ParserCallback = (result, chars, phraseIndex, userData): void => {
+  const data = userData as SyntaxData;
   switch (result.state) {
     case ids.ACTIVE:
       break;
@@ -256,8 +307,8 @@ function synTlsClose(result, chars, phraseIndex, data) {
       break;
     case ids.NOMATCH:
       data.errors.push({
-        line: data.findLine(data.lines, topAlt.tlsOpen),
-        char: topAlt.tlsOpen,
+        line: data.findLine(data.lines, toCharIndex(topAlt.tlsOpen), data.charsLength),
+        char: toCharIndex(topAlt.tlsOpen),
         msg: 'Case-insensitive literal string("...") opened but not closed.',
       });
       topAlt.basicError = true;
@@ -269,8 +320,9 @@ function synTlsClose(result, chars, phraseIndex, data) {
     default:
       throw new Error(`${THIS_FILE}synFile: unrecognized case.`);
   }
-}
-function synClsOpen(result, chars, phraseIndex) {
+};
+const synClsOpen: ParserCallback = (result, chars, phraseIndex, userData): void => {
+  const data = userData as SyntaxData;
   switch (result.state) {
     case ids.ACTIVE:
       break;
@@ -284,8 +336,9 @@ function synClsOpen(result, chars, phraseIndex) {
     default:
       throw new Error(`${THIS_FILE}synFile: unrecognized case.`);
   }
-}
-function synClsString(result, chars, phraseIndex, data) {
+};
+const synClsString: ParserCallback = (result, chars, phraseIndex, userData): void => {
+  const data = userData as SyntaxData;
   switch (result.state) {
     case ids.ACTIVE:
       data.stringTabChar = false;
@@ -297,7 +350,7 @@ function synClsString(result, chars, phraseIndex, data) {
     case ids.MATCH:
       if (data.stringTabChar !== false) {
         data.errors.push({
-          line: data.findLine(data.lines, data.stringTabChar),
+          line: data.findLine(data.lines, data.stringTabChar, data.charsLength),
           char: data.stringTabChar,
           msg: 'Tab character (\\t, x09) not allowed in literal string.',
         });
@@ -306,8 +359,9 @@ function synClsString(result, chars, phraseIndex, data) {
     default:
       throw new Error(`${THIS_FILE}synFile: unrecognized case.`);
   }
-}
-function synClsClose(result, chars, phraseIndex, data) {
+};
+const synClsClose: ParserCallback = (result, chars, phraseIndex, userData): void => {
+  const data = userData as SyntaxData;
   switch (result.state) {
     case ids.ACTIVE:
       break;
@@ -315,8 +369,8 @@ function synClsClose(result, chars, phraseIndex, data) {
       break;
     case ids.NOMATCH:
       data.errors.push({
-        line: data.findLine(data.lines, topAlt.clsOpen),
-        char: topAlt.clsOpen,
+        line: data.findLine(data.lines, toCharIndex(topAlt.clsOpen), data.charsLength),
+        char: toCharIndex(topAlt.clsOpen),
         msg: "Case-sensitive literal string('...') opened but not closed.",
       });
       topAlt.clsOpen = null;
@@ -325,8 +379,8 @@ function synClsClose(result, chars, phraseIndex, data) {
     case ids.MATCH:
       if (data.strict) {
         data.errors.push({
-          line: data.findLine(data.lines, topAlt.clsOpen),
-          char: topAlt.clsOpen,
+          line: data.findLine(data.lines, toCharIndex(topAlt.clsOpen), data.charsLength),
+          char: toCharIndex(topAlt.clsOpen),
           msg: "Case-sensitive string operator('...') found - strict ABNF specified.",
         });
       }
@@ -335,8 +389,9 @@ function synClsClose(result, chars, phraseIndex, data) {
     default:
       throw new Error(`${THIS_FILE}synFile: unrecognized case.`);
   }
-}
-function synProsValOpen(result, chars, phraseIndex) {
+};
+const synProsValOpen: ParserCallback = (result, chars, phraseIndex, userData): void => {
+  const data = userData as SyntaxData;
   switch (result.state) {
     case ids.ACTIVE:
       break;
@@ -350,8 +405,9 @@ function synProsValOpen(result, chars, phraseIndex) {
     default:
       throw new Error(`${THIS_FILE}synFile: unrecognized case.`);
   }
-}
-function synProsValString(result, chars, phraseIndex, data) {
+};
+const synProsValString: ParserCallback = (result, chars, phraseIndex, userData): void => {
+  const data = userData as SyntaxData;
   switch (result.state) {
     case ids.ACTIVE:
       data.stringTabChar = false;
@@ -363,7 +419,7 @@ function synProsValString(result, chars, phraseIndex, data) {
     case ids.MATCH:
       if (data.stringTabChar !== false) {
         data.errors.push({
-          line: data.findLine(data.lines, data.stringTabChar),
+          line: data.findLine(data.lines, data.stringTabChar, data.charsLength),
           char: data.stringTabChar,
           msg: 'Tab character (\\t, x09) not allowed in prose value string.',
         });
@@ -372,8 +428,9 @@ function synProsValString(result, chars, phraseIndex, data) {
     default:
       throw new Error(`${THIS_FILE}synFile: unrecognized case.`);
   }
-}
-function synProsValClose(result, chars, phraseIndex, data) {
+};
+const synProsValClose: ParserCallback = (result, chars, phraseIndex, userData): void => {
+  const data = userData as SyntaxData;
   switch (result.state) {
     case ids.ACTIVE:
       break;
@@ -381,8 +438,8 @@ function synProsValClose(result, chars, phraseIndex, data) {
       break;
     case ids.NOMATCH:
       data.errors.push({
-        line: data.findLine(data.lines, topAlt.prosValOpen),
-        char: topAlt.prosValOpen,
+        line: data.findLine(data.lines, toCharIndex(topAlt.prosValOpen), data.charsLength),
+        char: toCharIndex(topAlt.prosValOpen),
         msg: 'Prose value operator(<...>) opened but not closed.',
       });
       topAlt.basicError = true;
@@ -390,8 +447,8 @@ function synProsValClose(result, chars, phraseIndex, data) {
       break;
     case ids.MATCH:
       data.errors.push({
-        line: data.findLine(data.lines, topAlt.prosValOpen),
-        char: topAlt.prosValOpen,
+        line: data.findLine(data.lines, toCharIndex(topAlt.prosValOpen), data.charsLength),
+        char: toCharIndex(topAlt.prosValOpen),
         msg: 'Prose value operator(<...>) found. The ABNF syntax is valid, but a parser cannot be generated from this grammar.',
       });
       topAlt.prosValOpen = null;
@@ -399,8 +456,9 @@ function synProsValClose(result, chars, phraseIndex, data) {
     default:
       throw new Error(`${THIS_FILE}synFile: unrecognized case.`);
   }
-}
-function synGroupOpen(result, chars, phraseIndex, data) {
+};
+const synGroupOpen: ParserCallback = (result, chars, phraseIndex, userData): void => {
+  const data = userData as SyntaxData;
   switch (result.state) {
     case ids.ACTIVE:
       break;
@@ -424,8 +482,9 @@ function synGroupOpen(result, chars, phraseIndex, data) {
     default:
       throw new Error(`${THIS_FILE}synFile: unrecognized case.`);
   }
-}
-function synGroupClose(result, chars, phraseIndex, data) {
+};
+const synGroupClose: ParserCallback = (result, chars, phraseIndex, userData): void => {
+  const data = userData as SyntaxData;
   switch (result.state) {
     case ids.ACTIVE:
       break;
@@ -433,21 +492,22 @@ function synGroupClose(result, chars, phraseIndex, data) {
       break;
     case ids.NOMATCH:
       data.errors.push({
-        line: data.findLine(data.lines, topAlt.groupOpen),
-        char: topAlt.groupOpen,
+        line: data.findLine(data.lines, topAlt.groupOpen ?? -1, data.charsLength),
+        char: topAlt.groupOpen ?? -1,
         msg: 'Group "(...)" opened but not closed.',
       });
-      topAlt = data.altStack.pop();
+      topAlt = data.altStack.pop() ?? topAlt;
       topAlt.groupError = true;
       break;
     case ids.MATCH:
-      topAlt = data.altStack.pop();
+      topAlt = data.altStack.pop() ?? topAlt;
       break;
     default:
       throw new Error(`${THIS_FILE}synFile: unrecognized case.`);
   }
-}
-function synOptionOpen(result, chars, phraseIndex, data) {
+};
+const synOptionOpen: ParserCallback = (result, chars, phraseIndex, userData): void => {
+  const data = userData as SyntaxData;
   switch (result.state) {
     case ids.ACTIVE:
       break;
@@ -471,8 +531,9 @@ function synOptionOpen(result, chars, phraseIndex, data) {
     default:
       throw new Error(`${THIS_FILE}synFile: unrecognized case.`);
   }
-}
-function synOptionClose(result, chars, phraseIndex, data) {
+};
+const synOptionClose: ParserCallback = (result, chars, phraseIndex, userData): void => {
+  const data = userData as SyntaxData;
   switch (result.state) {
     case ids.ACTIVE:
       break;
@@ -480,21 +541,30 @@ function synOptionClose(result, chars, phraseIndex, data) {
       break;
     case ids.NOMATCH:
       data.errors.push({
-        line: data.findLine(data.lines, topAlt.optionOpen),
-        char: topAlt.optionOpen,
+        line: data.findLine(data.lines, toCharIndex(topAlt.optionOpen), data.charsLength),
+        char: toCharIndex(topAlt.optionOpen),
         msg: 'Option "[...]" opened but not closed.',
       });
-      topAlt = data.altStack.pop();
+      const previousOption = data.altStack.pop();
+      if (!previousOption) {
+        throw new Error(`${THIS_FILE}synOptionClose: missing option state`);
+      }
+      topAlt = previousOption;
       topAlt.optionError = true;
       break;
     case ids.MATCH:
-      topAlt = data.altStack.pop();
+      const previousOptionMatch = data.altStack.pop();
+      if (!previousOptionMatch) {
+        throw new Error(`${THIS_FILE}synOptionClose: missing option state`);
+      }
+      topAlt = previousOptionMatch;
       break;
     default:
       throw new Error(`${THIS_FILE}synFile: unrecognized case.`);
   }
-}
-function synBasicElementError(result, chars, phraseIndex, data) {
+};
+const synBasicElementError: ParserCallback = (result, chars, phraseIndex, userData): void => {
+  const data = userData as SyntaxData;
   switch (result.state) {
     case ids.ACTIVE:
       break;
@@ -514,8 +584,9 @@ function synBasicElementError(result, chars, phraseIndex, data) {
     default:
       throw new Error(`${THIS_FILE}synFile: unrecognized case.`);
   }
-}
-function synLineEnd(result, chars, phraseIndex, data) {
+};
+const synLineEnd: ParserCallback = (result, chars, phraseIndex, userData): void => {
+  const data = userData as SyntaxData;
   switch (result.state) {
     case ids.ACTIVE:
       break;
@@ -537,8 +608,9 @@ function synLineEnd(result, chars, phraseIndex, data) {
     default:
       throw new Error(`${THIS_FILE}synFile: unrecognized case.`);
   }
-}
-function synLineEndError(result, chars, phraseIndex, data) {
+};
+const synLineEndError: ParserCallback = (result, chars, phraseIndex, userData): void => {
+  const data = userData as SyntaxData;
   switch (result.state) {
     case ids.ACTIVE:
       break;
@@ -557,8 +629,9 @@ function synLineEndError(result, chars, phraseIndex, data) {
     default:
       throw new Error(`${THIS_FILE}synFile: unrecognized case.`);
   }
-}
-function synRepetition(result, chars, phraseIndex, data) {
+};
+const synRepetition: ParserCallback = (result, chars, phraseIndex, userData): void => {
+  const data = userData as SyntaxData;
   switch (result.state) {
     case ids.ACTIVE:
       break;
@@ -573,33 +646,34 @@ function synRepetition(result, chars, phraseIndex, data) {
     default:
       throw new Error(`${THIS_FILE}synFile: unrecognized case.`);
   }
-}
+};
 // Define the list of callback functions.
-const callbacks = [];
-callbacks.andop = synAndOp;
-callbacks.basicelementerr = synBasicElementError;
-callbacks.clsclose = synClsClose;
-callbacks.clsopen = synClsOpen;
-callbacks.clsstring = synClsString;
-callbacks.definedaserror = synDefinedAsError;
-callbacks.file = synFile;
-callbacks.groupclose = synGroupClose;
-callbacks.groupopen = synGroupOpen;
-callbacks.lineenderror = synLineEndError;
-callbacks.lineend = synLineEnd;
-callbacks.notop = synNotOp;
-callbacks.optionclose = synOptionClose;
-callbacks.optionopen = synOptionOpen;
-callbacks.prosvalclose = synProsValClose;
-callbacks.prosvalopen = synProsValOpen;
-callbacks.prosvalstring = synProsValString;
-callbacks.repetition = synRepetition;
-callbacks.rule = synRule;
-callbacks.ruleerror = synRuleError;
-callbacks.rulenameerror = synRuleNameError;
-callbacks.stringtab = synStringTab;
-callbacks.tlsclose = synTlsClose;
-callbacks.tlsopen = synTlsOpen;
-callbacks.tlsstring = synTlsString;
-callbacks.udtop = synUdtOp;
+const callbacks: Record<string, ParserCallback> = {
+  andop: synAndOp,
+  basicelementerr: synBasicElementError,
+  clsclose: synClsClose,
+  clsopen: synClsOpen,
+  clsstring: synClsString,
+  definedaserror: synDefinedAsError,
+  file: synFile,
+  groupclose: synGroupClose,
+  groupopen: synGroupOpen,
+  lineenderror: synLineEndError,
+  lineend: synLineEnd,
+  notop: synNotOp,
+  optionclose: synOptionClose,
+  optionopen: synOptionOpen,
+  prosvalclose: synProsValClose,
+  prosvalopen: synProsValOpen,
+  prosvalstring: synProsValString,
+  repetition: synRepetition,
+  rule: synRule,
+  ruleerror: synRuleError,
+  rulenameerror: synRuleNameError,
+  stringtab: synStringTab,
+  tlsclose: synTlsClose,
+  tlsopen: synTlsOpen,
+  tlsstring: synTlsString,
+  udtop: synUdtOp,
+};
 export { callbacks };

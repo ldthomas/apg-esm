@@ -9,34 +9,89 @@
  * empty-string attributes for each grammar rule.
  */
 import id from '../apg-lib/identifiers.js';
+import type { GrammarOpcode, GrammarRule, GrammarUdt } from '../apg-lib/types.js';
 
 const THIS_FILE = 'rule-attributes.js';
-let state = null;
 
-function isEmptyOnly(attr) {
+interface AttributeInfo {
+  left: boolean;
+  nested: boolean;
+  right: boolean;
+  empty: boolean;
+  finite: boolean;
+  cyclic: boolean;
+  leaf: boolean;
+  isOpen: boolean;
+  isComplete: boolean;
+  rule: GrammarRule | null;
+}
+
+interface RuleDependencyInfo {
+  rule: GrammarRule;
+  recursiveType: number;
+  groupNumber: number;
+  refersTo: boolean[];
+  refersToUdt: boolean[];
+  referencedBy: boolean[];
+}
+
+interface RuleAttributeState {
+  rules: GrammarRule[];
+  udts: GrammarUdt[];
+  ruleCount: number;
+  udtCount: number;
+  startRule: number;
+  dependenciesComplete: boolean;
+  attributesComplete: boolean;
+  isMutuallyRecursive: boolean;
+  ruleIndexes: number[];
+  ruleAlphaIndexes: number[];
+  ruleTypeIndexes: number[];
+  udtIndexes: number[];
+  udtAlphaIndexes: number[];
+  attrsErrorCount: number;
+  attrs: AttributeInfo[];
+  attrsErrors: AttributeInfo[];
+  attrsWorking: AttributeInfo[];
+  ruleDeps: RuleDependencyInfo[];
+  attrGen(rule?: GrammarRule): AttributeInfo;
+  attrInit(attr: AttributeInfo): void;
+  attrCopy(dst: AttributeInfo, src: AttributeInfo): void;
+  falseArray(length: number): boolean[];
+  falsifyArray(a: boolean[]): void;
+  indexArray(length: number): number[];
+  compRulesAlpha(left: number, right: number): number;
+  compUdtsAlpha(left: number, right: number): number;
+  compRulesType(left: number, right: number): number;
+  compRulesGroup(left: number, right: number): number;
+  typeToString(recursiveType: number): string;
+}
+
+let state: RuleAttributeState | null = null;
+
+function isEmptyOnly(attr: AttributeInfo): boolean {
   if (attr.left || attr.nested || attr.right || attr.cyclic) {
     return false;
   }
   return attr.empty;
 }
-function isRecursive(attr) {
+
+function isRecursive(attr: AttributeInfo): boolean {
   if (attr.left || attr.nested || attr.right || attr.cyclic) {
     return true;
   }
   return false;
 }
-function isCatNested(attrs, count) {
+
+function isCatNested(attrs: AttributeInfo[], count: number): boolean {
   let i = 0;
   let j = 0;
   let k = 0;
-  /* 1. if any child is nested, CAT is nested */
   for (i = 0; i < count; i += 1) {
     if (attrs[i].nested) {
       return true;
     }
   }
-  /* 2.) the left-most right recursive child
-               is followed by at least one non-empty child */
   for (i = 0; i < count; i += 1) {
     if (attrs[i].right && !attrs[i].leaf) {
       for (j = i + 1; j < count; j += 1) {
@@ -46,8 +101,6 @@ function isCatNested(attrs, count) {
       }
     }
   }
-  /* 3.) the right-most left recursive child
-               is preceded by at least one non-empty child */
   for (i = count - 1; i >= 0; i -= 1) {
     if (attrs[i].left && !attrs[i].leaf) {
       for (j = i - 1; j >= 0; j -= 1) {
@@ -57,8 +110,6 @@ function isCatNested(attrs, count) {
       }
     }
   }
-  /* 4. there is at lease one recursive child between
-              the left-most and right-most non-recursive, non-empty children */
   for (i = 0; i < count; i += 1) {
     if (!attrs[i].empty && !isRecursive(attrs[i])) {
       for (j = i + 1; j < count; j += 1) {
@@ -72,12 +123,10 @@ function isCatNested(attrs, count) {
       }
     }
   }
-
-  /* none of the above */
   return false;
 }
-function isCatCyclic(attrs, count) {
-  /* if all children are cyclic, CAT is cyclic */
+
+function isCatCyclic(attrs: AttributeInfo[], count: number): boolean {
   for (let i = 0; i < count; i += 1) {
     if (!attrs[i].cyclic) {
       return false;
@@ -85,8 +134,8 @@ function isCatCyclic(attrs, count) {
   }
   return true;
 }
-function isCatLeft(attrs, count) {
-  /* if the left-most non-empty is left, CAT is left */
+
+function isCatLeft(attrs: AttributeInfo[], count: number): boolean {
   for (let i = 0; i < count; i += 1) {
     if (attrs[i].left) {
       return true;
@@ -94,12 +143,11 @@ function isCatLeft(attrs, count) {
     if (!attrs[i].empty) {
       return false;
     }
-    /* keep looking */
   }
-  return false; /* all left-most are empty */
+  return false;
 }
-function isCatRight(attrs, count) {
-  /* if the right-most non-empty is right, CAT is right */
+
+function isCatRight(attrs: AttributeInfo[], count: number): boolean {
   for (let i = count - 1; i >= 0; i -= 1) {
     if (attrs[i].right) {
       return true;
@@ -107,12 +155,11 @@ function isCatRight(attrs, count) {
     if (!attrs[i].empty) {
       return false;
     }
-    /* keep looking */
   }
   return false;
 }
-function isCatEmpty(attrs, count) {
-  /* if all children are empty, CAT is empty */
+
+function isCatEmpty(attrs: AttributeInfo[], count: number): boolean {
   for (let i = 0; i < count; i += 1) {
     if (!attrs[i].empty) {
       return false;
@@ -120,8 +167,8 @@ function isCatEmpty(attrs, count) {
   }
   return true;
 }
-function isCatFinite(attrs, count) {
-  /* if all children are finite, CAT is finite */
+
+function isCatFinite(attrs: AttributeInfo[], count: number): boolean {
   for (let i = 0; i < count; i += 1) {
     if (!attrs[i].finite) {
       return false;
@@ -129,18 +176,18 @@ function isCatFinite(attrs, count) {
   }
   return true;
 }
-function cat(stateArg, opcodes, opIndex, iAttr) {
-  let i = 0;
-  const opCat = opcodes[opIndex];
-  const count = opCat.children.length;
 
-  /* generate an empty array of child attributes */
-  const childAttrs = [];
-  for (i = 0; i < count; i += 1) {
+function cat(stateArg: RuleAttributeState, opcodes: GrammarOpcode[], opIndex: number, iAttr: AttributeInfo): void {
+  const opCat = opcodes[opIndex];
+  if (!opCat || !opCat.children) {
+    throw new Error(`${THIS_FILE}:invalid CAT opcode`);
+  }
+  const count = opCat.children.length;
+  const childAttrs: AttributeInfo[] = [];
+  for (let i = 0; i < count; i += 1) {
     childAttrs.push(stateArg.attrGen());
   }
-  for (i = 0; i < count; i += 1) {
-    // eslint-disable-next-line no-use-before-define
+  for (let i = 0; i < count; i += 1) {
     opEval(stateArg, opcodes, opCat.children[i], childAttrs[i]);
   }
   iAttr.left = isCatLeft(childAttrs, count);
@@ -150,29 +197,28 @@ function cat(stateArg, opcodes, opIndex, iAttr) {
   iAttr.finite = isCatFinite(childAttrs, count);
   iAttr.cyclic = isCatCyclic(childAttrs, count);
 }
-function alt(stateArg, opcodes, opIndex, iAttr) {
-  let i = 0;
-  const opAlt = opcodes[opIndex];
-  const count = opAlt.children.length;
 
-  /* generate an empty array of child attributes */
-  const childAttrs = [];
-  for (i = 0; i < count; i += 1) {
+function alt(stateArg: RuleAttributeState, opcodes: GrammarOpcode[], opIndex: number, iAttr: AttributeInfo): void {
+  const opAlt = opcodes[opIndex];
+  if (!opAlt || !opAlt.children) {
+    throw new Error(`${THIS_FILE}:invalid ALT opcode`);
+  }
+  const count = opAlt.children.length;
+  const childAttrs: AttributeInfo[] = [];
+  for (let i = 0; i < count; i += 1) {
     childAttrs.push(stateArg.attrGen());
   }
-  for (i = 0; i < count; i += 1) {
-    // eslint-disable-next-line no-use-before-define
+  for (let i = 0; i < count; i += 1) {
     opEval(stateArg, opcodes, opAlt.children[i], childAttrs[i]);
   }
 
-  /* if any child attribute is true, ALT is true */
   iAttr.left = false;
   iAttr.right = false;
   iAttr.nested = false;
   iAttr.empty = false;
   iAttr.finite = false;
   iAttr.cyclic = false;
-  for (i = 0; i < count; i += 1) {
+  for (let i = 0; i < count; i += 1) {
     if (childAttrs[i].left) {
       iAttr.left = true;
     }
@@ -193,28 +239,13 @@ function alt(stateArg, opcodes, opIndex, iAttr) {
     }
   }
 }
-function bkr(stateArg, opcodes, opIndex, iAttr) {
-  const opBkr = opcodes[opIndex];
-  if (opBkr.index >= stateArg.ruleCount) {
-    /* use UDT values */
-    iAttr.empty = stateArg.udts[opBkr.index - stateArg.ruleCount].empty;
-    iAttr.finite = true;
-  } else {
-    /* use the empty and finite values from the back referenced rule */
-    // eslint-disable-next-line no-use-before-define
-    ruleAttrsEval(stateArg, opBkr.index, iAttr);
 
-    /* however, this is a terminal node like TLS */
-    iAttr.left = false;
-    iAttr.nested = false;
-    iAttr.right = false;
-    iAttr.cyclic = false;
-  }
-}
-
-function opEval(stateArg, opcodes, opIndex, iAttr) {
+function opEval(stateArg: RuleAttributeState, opcodes: GrammarOpcode[], opIndex: number, iAttr: AttributeInfo): void {
   stateArg.attrInit(iAttr);
   const opi = opcodes[opIndex];
+  if (!opi) {
+    throw new Error(`${THIS_FILE}:invalid opcode index ${opIndex}`);
+  }
   switch (opi.type) {
     case id.ALT:
       alt(stateArg, opcodes, opIndex, iAttr);
@@ -224,27 +255,21 @@ function opEval(stateArg, opcodes, opIndex, iAttr) {
       break;
     case id.REP:
       opEval(stateArg, opcodes, opIndex + 1, iAttr);
-      if (opi.min === 0) {
+      if ((opi.min ?? 0) === 0) {
         iAttr.empty = true;
         iAttr.finite = true;
       }
       break;
     case id.RNM:
-      // eslint-disable-next-line no-use-before-define
-      ruleAttrsEval(stateArg, opcodes[opIndex].index, iAttr);
-      break;
-    case id.BKR:
-      bkr(stateArg, opcodes, opIndex, iAttr);
+      ruleAttrsEval(stateArg, opi.index ?? -1, iAttr);
       break;
     case id.AND:
     case id.NOT:
-    case id.BKA:
-    case id.BKN:
       opEval(stateArg, opcodes, opIndex + 1, iAttr);
       iAttr.empty = true;
       break;
     case id.TLS:
-      iAttr.empty = !opcodes[opIndex].string.length;
+      iAttr.empty = !(opi.string ?? []).length;
       iAttr.finite = true;
       iAttr.cyclic = false;
       break;
@@ -255,13 +280,7 @@ function opEval(stateArg, opcodes, opIndex, iAttr) {
       iAttr.cyclic = false;
       break;
     case id.UDT:
-      iAttr.empty = opi.empty;
-      iAttr.finite = true;
-      iAttr.cyclic = false;
-      break;
-    case id.ABG:
-    case id.AEN:
-      iAttr.empty = true;
+      iAttr.empty = opi.empty ?? false;
       iAttr.finite = true;
       iAttr.cyclic = false;
       break;
@@ -269,21 +288,17 @@ function opEval(stateArg, opcodes, opIndex, iAttr) {
       throw new Error(`unknown opcode type: ${opi}`);
   }
 }
-// The main logic for handling rules that:
-//  - have already be evaluated
-//  - have not been evaluated and is the first occurrence on this branch
-//  - second occurrence on this branch for the start rule
-//  - second occurrence on this branch for non-start rules
-function ruleAttrsEval(stateArg, ruleIndex, iAttr) {
+
+function ruleAttrsEval(stateArg: RuleAttributeState, ruleIndex: number, iAttr: AttributeInfo): void {
   const attri = stateArg.attrsWorking[ruleIndex];
+  if (!attri) {
+    throw new Error(`${THIS_FILE}:invalid rule index ${ruleIndex}`);
+  }
   if (attri.isComplete) {
-    /* just use the completed values */
     stateArg.attrCopy(iAttr, attri);
   } else if (!attri.isOpen) {
-    /* open the rule and traverse it */
     attri.isOpen = true;
-    opEval(stateArg, attri.rule.opcodes, 0, iAttr);
-    /* complete this rule's attributes */
+    opEval(stateArg, attri.rule?.opcodes ?? [], 0, iAttr);
     attri.left = iAttr.left;
     attri.right = iAttr.right;
     attri.nested = iAttr.nested;
@@ -294,52 +309,48 @@ function ruleAttrsEval(stateArg, ruleIndex, iAttr) {
     attri.isOpen = false;
     attri.isComplete = true;
   } else if (ruleIndex === stateArg.startRule) {
-    /* use recursive leaf values */
-    if (ruleIndex === stateArg.startRule) {
-      iAttr.left = true;
-      iAttr.right = true;
-      iAttr.cyclic = true;
-      iAttr.leaf = true;
-    }
+    iAttr.left = true;
+    iAttr.right = true;
+    iAttr.cyclic = true;
+    iAttr.leaf = true;
   } else {
-    /* non-start rule terminal leaf */
     iAttr.finite = true;
   }
 }
-// The main driver for the attribute generation.
-const ruleAttributes = (stateArg) => {
+
+const ruleAttributes = (stateArg: RuleAttributeState): void => {
   state = stateArg;
-  let i = 0;
-  let j = 0;
   const iAttr = state.attrGen();
-  for (i = 0; i < state.ruleCount; i += 1) {
-    /* initialize working attributes */
-    for (j = 0; j < state.ruleCount; j += 1) {
+  for (let i = 0; i < state.ruleCount; i += 1) {
+    for (let j = 0; j < state.ruleCount; j += 1) {
       state.attrInit(state.attrsWorking[j]);
     }
     state.startRule = i;
     ruleAttrsEval(state, i, iAttr);
-
-    /* save off the working attributes for this rule */
     state.attrCopy(state.attrs[i], state.attrsWorking[i]);
   }
   state.attributesComplete = true;
-  let attri = null;
-  for (i = 0; i < state.ruleCount; i += 1) {
-    attri = state.attrs[i];
+  for (let i = 0; i < state.ruleCount; i += 1) {
+    const attri = state.attrs[i];
     if (attri.left || !attri.finite || attri.cyclic) {
-      const temp = state.attrGen(attri.rule);
+      const temp = state.attrGen(attri.rule ?? undefined);
       state.attrCopy(temp, attri);
       state.attrsErrors.push(temp);
       state.attrsErrorCount += 1;
     }
   }
 };
-const truth = (val) => (val ? 't' : 'f');
-const tError = (val) => (val ? 'e' : 'f');
-const fError = (val) => (val ? 't' : 'e');
-const showAttr = (seq, index, attr, dep) => {
-  const fmtNum = (n) => (n <= 999 ? String(n).padStart(3) : String(n));
+
+const truth = (val: boolean): string => (val ? 't' : 'f');
+const tError = (val: boolean): string => (val ? 'e' : 'f');
+const fError = (val: boolean): string => (val ? 't' : 'e');
+
+const showAttr = (seq: number, index: number, attr: AttributeInfo, dep: RuleDependencyInfo): string => {
+  const fmtNum = (n: number): string => (n <= 999 ? String(n).padStart(3) : String(n));
+  const currentState = state;
+  if (!currentState) {
+    throw new Error(`${THIS_FILE}:showAttr: attributes not available`);
+  }
   let str = `${fmtNum(seq)}|${fmtNum(index)}|`;
   str += `${tError(attr.left)} `;
   str += `${truth(attr.nested)} `;
@@ -347,19 +358,16 @@ const showAttr = (seq, index, attr, dep) => {
   str += `${tError(attr.cyclic)} `;
   str += `${fError(attr.finite)} `;
   str += `${truth(attr.empty)}|`;
-  str += `${state.typeToString(dep.recursiveType)}|`;
+  str += `${currentState.typeToString(dep.recursiveType)}|`;
   str += dep.recursiveType === id.ATTR_MR ? dep.groupNumber : '-';
-  str += `|${attr.rule.name}\n`;
+  str += `|${attr.rule?.name ?? ''}\n`;
   return str;
 };
 
-const showHeader = () => {
-  // let str = 'LEGEND - t=true, f=false, e=error\n';
-  // str += 'sequence:rule index:left nested right cyclic finite empty:type:group number:rule name\n';
-  // return '  s|  i|l n r c f e| t|g|rule name (*see below for column and column entry legends)\n';
-  return '(*see below for column and column entry legends)\n  S|  I|L N R C F E| T|G|rule name\n';
-};
-const showFooter = () => {
+const showHeader = (): string =>
+  '(*see below for column and column entry legends)\n  S|  I|L N R C F E| T|G|rule name\n';
+
+const showFooter = (): string => {
   let str = 'LEGEND\n';
   str += 'S - sequence number (sequential)\n';
   str += 'I - rule index (order in which rule appears in SABNF grammar)\n';
@@ -373,17 +381,24 @@ const showFooter = () => {
   str += 'G - mutually-recursive group number or "-" if N/A\n';
   return str;
 };
-const showAttributeErrors = () => {
-  let attri = null;
-  let depi = null;
+
+const showAttributeErrors = (): string => {
+  const currentState = state;
+  if (!currentState) {
+    throw new Error(`${THIS_FILE}:showAttributeErrors: attributes not available`);
+  }
   let str = '';
   str += 'RULE ATTRIBUTES WITH ERRORS\n';
   str += showHeader();
-  if (state.attrsErrorCount) {
-    for (let i = 0; i < state.attrsErrorCount; i += 1) {
-      attri = state.attrsErrors[i];
-      depi = state.ruleDeps[attri.rule.index];
-      str += showAttr(i, attri.rule.index, attri, depi);
+  if (currentState.attrsErrorCount) {
+    for (let i = 0; i < currentState.attrsErrorCount; i += 1) {
+      const attri = currentState.attrsErrors[i];
+      const ruleIndex = attri.rule?.index ?? -1;
+      if (ruleIndex < 0 || ruleIndex >= currentState.ruleDeps.length) {
+        throw new Error(`${THIS_FILE}:showAttributeErrors: invalid rule index ${ruleIndex}`);
+      }
+      const depi = currentState.ruleDeps[ruleIndex];
+      str += showAttr(i, ruleIndex, attri, depi);
     }
   } else {
     str += '<none>\n';
@@ -392,40 +407,31 @@ const showAttributeErrors = () => {
   return str;
 };
 
-const show = (type) => {
-  let i = 0;
-  let ii = 0;
-  let attri = null;
-  let depi = null;
-  let str = '';
-  let { ruleIndexes } = state;
-  // let udtIndexes = state.udtIndexes;
-  if (type === 97) {
-    ruleIndexes = state.ruleAlphaIndexes;
-    // udtIndexes = state.udtAlphaIndexes;
-  } else if (type === 116) {
-    ruleIndexes = state.ruleTypeIndexes;
-    // udtIndexes = state.udtAlphaIndexes;
+const show = (type?: number): string => {
+  const currentState = state;
+  if (!currentState) {
+    throw new Error(`${THIS_FILE}:show: attributes not available`);
   }
-  /* show all attributes */
-  for (i = 0; i < state.ruleCount; i += 1) {
-    ii = ruleIndexes[i];
-    attri = state.attrs[ii];
-    depi = state.ruleDeps[ii];
+  let str = '';
+  let ruleIndexes = currentState.ruleIndexes;
+  if (type === 97) {
+    ruleIndexes = currentState.ruleAlphaIndexes;
+  } else if (type === 116) {
+    ruleIndexes = currentState.ruleTypeIndexes;
+  }
+  for (let i = 0; i < currentState.ruleCount; i += 1) {
+    const ii = ruleIndexes[i];
+    const attri = currentState.attrs[ii];
+    const depi = currentState.ruleDeps[ii];
     str += showAttr(i, ii, attri, depi);
   }
   str += showFooter();
   return str;
 };
 
-// Display the rule attributes.
-// - order
-//      - "index" or "i", index order (default)
-//      - "alpha" or "a", alphabetical order
-//      - "type" or "t", ordered by type (alphabetical within each type/group)
-//      - none of above, index order (default)
-const showAttributes = (order = 'index') => {
-  if (!state.attributesComplete) {
+const showAttributes = (order = 'index'): string => {
+  const currentState = state;
+  if (!currentState || !currentState.attributesComplete) {
     throw new Error(`${THIS_FILE}:showAttributes: attributes not available`);
   }
   let str = '';

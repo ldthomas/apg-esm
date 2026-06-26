@@ -1,5 +1,5 @@
-import Api from '../src/apg-api/api.js';
-import Parser from '../src/apg-lib/parser.js';
+import Api from '../dist/apg-api/api.js';
+import Parser from '../dist/apg-lib/parser.js';
 
 describe('SABNF grammar scanner errors', () => {
   test('invalid characters', () => {
@@ -282,13 +282,15 @@ describe('grammar semantic errors', () => {
     const desc = api.errorsToAscii();
     expect(re.test(desc)).toBe(true);
   });
-  test('rule not defined', () => {
-    const abnf = 'file = a b\na = "a"\na = "a"\n';
+  test('rule previously defined', () => {
+    const abnf = 'file = a b\na = "a"\nb = "b"\na = "a"\n';
     api = new Api(abnf);
     api.generate();
     expect(api.errors.length).toBeGreaterThan(0);
     const re = /Rule name[\s\S]*previously defined/;
     const desc = api.errorsToAscii();
+    // console.log('rule previously defined errors:');
+    // console.log(desc);
     expect(re.test(desc)).toBe(true);
   });
   test('rule for incremental alternate not defined', () => {

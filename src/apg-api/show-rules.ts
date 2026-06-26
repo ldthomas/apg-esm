@@ -6,29 +6,33 @@
  * @module show-rules
  * @description Formats and returns a list of all rule and UDT names defined in a grammar.
  */
+import type { GrammarRule, GrammarUdt } from '../apg-lib/types.js';
+
 const THIS_FILE = 'show-rules.js';
+
 /**
  * @function showRules
  * @description Returns a formatted list of all rule and UDT names defined in the grammar.
- * @param {Object[]} [rulesIn=[]] - Array of rule objects produced by the API translator.
- * @param {Object[]} [udtsIn=[]] - Array of UDT objects produced by the API translator.
+ * @param {GrammarRule[]} [rulesIn=[]] - Array of rule objects produced by the API translator.
+ * @param {GrammarUdt[]} [udtsIn=[]] - Array of UDT objects produced by the API translator.
  * @param {string} [order='index'] - Sort order: `'index'`/`'i'` for definition order,
  *   `'alpha'`/`'a'` for alphabetical order.
  * @returns {string} Formatted multi-line string listing all rule and UDT names.
  */
-function showRules(rulesIn = [], udtsIn = [], order = 'index') {
+function showRules(rulesIn: GrammarRule[] = [], udtsIn: GrammarUdt[] = [], order: string = 'index'): string {
   const thisFuncName = 'showRules';
-  let alphaArray = [];
-  let udtAlphaArray = [];
-  const indexArray = [];
-  const udtIndexArray = [];
-  const rules = rulesIn;
-  const udts = udtsIn;
-  const ruleCount = rulesIn.length;
-  const udtCount = udtsIn.length;
+  let alphaArray: number[] = [];
+  let udtAlphaArray: number[] = [];
+  const indexArray: number[] = [];
+  const udtIndexArray: number[] = [];
+  const rules: GrammarRule[] = rulesIn;
+  const udts: GrammarUdt[] = udtsIn;
+  const ruleCount: number = rules.length;
+  const udtCount: number = udts.length;
   let str = 'RULE/UDT NAMES';
-  let i;
-  function compRulesAlpha(left, right) {
+  let i: number;
+
+  function compRulesAlpha(left: number, right: number): number {
     if (rules[left].lower < rules[right].lower) {
       return -1;
     }
@@ -37,7 +41,8 @@ function showRules(rulesIn = [], udtsIn = [], order = 'index') {
     }
     return 0;
   }
-  function compUdtsAlpha(left, right) {
+
+  function compUdtsAlpha(left: number, right: number): number {
     if (udts[left].lower < udts[right].lower) {
       return -1;
     }
@@ -46,6 +51,7 @@ function showRules(rulesIn = [], udtsIn = [], order = 'index') {
     }
     return 0;
   }
+
   if (!(Array.isArray(rulesIn) && rulesIn.length)) {
     throw new Error(`${THIS_FILE}:${thisFuncName}: rules arg must be array with length > 0`);
   }
@@ -65,7 +71,10 @@ function showRules(rulesIn = [], udtsIn = [], order = 'index') {
     udtAlphaArray = udtIndexArray.slice(0);
     udtAlphaArray.sort(compUdtsAlpha);
   }
-  if (order.charCodeAt(0) === 97) {
+
+  const orderValue = order.toLowerCase();
+  const isAlphabetical = orderValue === 'alpha' || orderValue === 'a';
+  if (isAlphabetical) {
     str += ' - alphabetical by rule/UDT name\n';
     for (i = 0; i < ruleCount; i += 1) {
       str += `${i}: ${alphaArray[i]}: ${rules[alphaArray[i]].name}\n`;
@@ -86,6 +95,8 @@ function showRules(rulesIn = [], udtsIn = [], order = 'index') {
       }
     }
   }
+
   return str;
 }
+
 export default showRules;

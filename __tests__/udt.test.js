@@ -1,6 +1,6 @@
-import Api from '../src/apg-api/api.js';
-import Parser from '../src/apg-lib/parser.js';
-import ids from '../src/apg-lib/identifiers.js';
+import Api from '../dist/apg-api/api.js';
+import Parser from '../dist/apg-lib/parser.js';
+import ids from '../dist/apg-lib/identifiers.js';
 
 let float = '';
 float += 'float    = [sign] decimal [exponent]\n';

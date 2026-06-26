@@ -11,16 +11,30 @@
 import fs from 'fs';
 import path from 'path';
 
+export interface Config {
+  help: string;
+  version: string;
+  error: string;
+  strict: boolean;
+  typescript: boolean;
+  noAttrs: boolean;
+  displayRules: boolean;
+  displayRuleDependencies: boolean;
+  displayAttributes: boolean;
+  src: string | null;
+  outFilename: string;
+  outfd: number | null;
+  funcName: string | null;
+}
+
 /**
  * @function commandLine
  * @description Parses APG command-line arguments and returns a configuration object.
- * @param {string[]} args - Command-line arguments (e.g. `process.argv.slice(2)`).
- * @returns {{ src: string|null, out: string|null, strict: boolean, typescript: boolean,
- *   displayRules: boolean, displayRuleDependencies: boolean, displayAttributes: boolean,
- *   help: string, version: string, error: string }} Configuration object.
+ * @param args - Command-line arguments (e.g. `process.argv.slice(2)`).
+ * @returns Configuration object.
  */
-export default function commandLine(args) {
-  const helpScreen = (helpArgs) => {
+export default function commandLine(args: string[]): Config {
+  const helpScreen = (helpArgs: string[]): string => {
     let help = 'Usage: apg options\n';
     let options = '';
     helpArgs.forEach((arg) => {
@@ -52,7 +66,7 @@ export default function commandLine(args) {
     help += '\n';
     return help;
   };
-  const version = () => {
+  const version = (): string => {
     const v = 'apg-esm, version 1.0.0';
     const c = 'Copyright (c) 2026 Lowell D. Thomas';
     const l = 'MIT License';
@@ -73,8 +87,8 @@ export default function commandLine(args) {
   const INS = '-i';
   const OUTL = '--out';
   const OUTS = '-o';
-  let inFilenames = [];
-  const config = {
+  let inFilenames: string[] = [];
+  const config: Config = {
     help: '',
     version: '',
     error: '',
@@ -89,8 +103,8 @@ export default function commandLine(args) {
     outfd: null,
     funcName: null,
   };
-  let key;
-  let value;
+  let key: string;
+  let value: string;
   let i = 0;
   try {
     while (i < args.length) {
@@ -166,10 +180,8 @@ export default function commandLine(args) {
       throw new Error('command line error: no input file(s)');
     }
 
-    // Convert input Buffer to JavaScript string (assume UTF-8 encoded text)
     config.src = Buffer.concat(inFilenames.map((name) => fs.readFileSync(name))).toString('utf8');
 
-    /* validate & open the output file, if any */
     config.outfd = null;
     if (config.outFilename) {
       const info = path.parse(config.outFilename);
@@ -182,7 +194,7 @@ export default function commandLine(args) {
       config.outfd = fs.openSync(config.outFilename, 'w');
     }
   } catch (e) {
-    config.error = `CONFIG EXCEPTION: ${e.message}`;
+    config.error = `CONFIG EXCEPTION: ${e instanceof Error ? e.message : String(e)}`;
     config.help = helpScreen(args);
   }
   return config;

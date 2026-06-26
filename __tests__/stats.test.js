@@ -1,5 +1,5 @@
-import Stats from '../src/apg-lib/stats.js';
-import id from '../src/apg-lib/identifiers.js';
+import Stats from '../dist/apg-lib/stats.js';
+import id from '../dist/apg-lib/identifiers.js';
 
 // Minimal rule/udt fixtures
 const rules = [

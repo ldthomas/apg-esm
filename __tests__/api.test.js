@@ -1,5 +1,5 @@
 import Grammar from './float.js';
-import Parser from '../src/apg-lib/parser.js';
+import Parser from '../dist/apg-lib/parser.js';
 import separate from './separate.js';
 import single from './single.js';
 

@@ -113,7 +113,7 @@ export default class Parser {
   private _traceSabnf: TraceSabnfLike | null;
   private _limitTreeDepth: number;
   private _limitNodeHits: number;
-  private _opcodes: GrammarOpcode[];
+  private _opcodes: GrammarOpcode[] | null;
   private _chars: number[];
   private _lookAhead: number;
   private _treeDepth: number;
@@ -147,6 +147,18 @@ export default class Parser {
     this._userData = undefined;
     this._maxMatched = 0;
   }
+  private _getOpcode(opIndex: number): GrammarOpcode {
+    const opcodes = this._opcodes;
+    if (!opcodes) {
+      throw new Error(`${THIS_FILE}opcode list not initialized`);
+    }
+    const op = opcodes[opIndex];
+    if (!op) {
+      throw new Error(`${THIS_FILE}invalid opcode index: ${opIndex}`);
+    }
+    return op;
+  }
+
   _clear(): void {
     this._opcodes = [];
     this._chars = [];
@@ -340,10 +352,18 @@ export default class Parser {
     const { index: start, line } = this._initializeStartRule(startRule);
     this._validateUdts();
     this._initializeInputChars(inputChars);
-    this._trace?.init(this._rules, this._udts, this._chars);
-    this._traceSabnf?.init(this._sabnfLines, this._chars);
-    this._stats?.init(this._rules, this._udts);
-    this._ast?.init(this._chars);
+    if (this._trace?.init) {
+      this._trace.init(this._rules, this._udts, this._chars);
+    }
+    if (this._traceSabnf?.init) {
+      this._traceSabnf.init(this._sabnfLines, this._chars);
+    }
+    if (this._stats?.init) {
+      this._stats.init(this._rules, this._udts);
+    }
+    if (this._ast?.init) {
+      this._ast.init(this._chars);
+    }
     const sysData: SysData = {
       state: id.ACTIVE,
       phraseLength: 0,
@@ -394,9 +414,10 @@ export default class Parser {
   // Executes its child nodes, from left to right, until it finds a match.
   // Fails if *all* of its child nodes fail.
   _opALT(opIndex: number, phraseIndex: number, sysData: SysData): void {
-    const op = this._opcodes[opIndex];
-    for (let i = 0; i < op.children.length; i += 1) {
-      this._opExecute(op.children[i], phraseIndex, sysData);
+    const op = this._getOpcode(opIndex);
+    const children = op.children ?? [];
+    for (let i = 0; i < children.length; i += 1) {
+      this._opExecute(children[i], phraseIndex, sysData);
       if (sysData.state !== id.NOMATCH) {
         break;
       }
@@ -408,16 +429,17 @@ export default class Parser {
   // concatenating the matched phrases.
   // Fails if *any* child nodes fail.
   _opCAT(opIndex: number, phraseIndex: number, sysData: SysData): void {
-    let astLength;
-    const op = this._opcodes[opIndex];
+    let astLength: number | undefined;
+    const op = this._getOpcode(opIndex);
+    const children = op.children ?? [];
     if (this._ast) {
       astLength = this._ast.getLength();
     }
     let catCharIndex = phraseIndex;
     let catPhrase = 0;
     let success = true;
-    for (let i = 0; i < op.children.length; i += 1) {
-      this._opExecute(op.children[i], catCharIndex, sysData);
+    for (let i = 0; i < children.length; i += 1) {
+      this._opExecute(children[i], catCharIndex, sysData);
       if (sysData.state === id.NOMATCH) {
         success = false;
         break;
@@ -433,7 +455,7 @@ export default class Parser {
       sysData.state = id.NOMATCH;
       sysData.phraseLength = 0;
       if (this._ast) {
-        this._ast.setLength(astLength);
+        this._ast.setLength?.(astLength);
       }
     }
   }
@@ -444,12 +466,14 @@ export default class Parser {
   // The number of repetitions executed and its final sysData depends
   // on its `min` & `max` repetition values.
   _opREP(opIndex: number, phraseIndex: number, sysData: SysData): void {
-    const op = this._opcodes[opIndex];
+    const op = this._getOpcode(opIndex);
+    const min = op.min ?? 0;
+    const max = op.max ?? 0;
     let repCharIndex = phraseIndex;
     let repPhrase = 0;
     let repCount = 0;
     const astLength = this._ast ? this._ast.getLength() : undefined;
-    while (repCharIndex < this._chars.length && repCount !== op.max) {
+    while (repCharIndex < this._chars.length && repCount !== max) {
       this._opExecute(opIndex + 1, repCharIndex, sysData);
       if (sysData.state === id.NOMATCH || sysData.state === id.EMPTY) {
         break;
@@ -459,14 +483,14 @@ export default class Parser {
       repCharIndex += sysData.phraseLength;
     }
     /* evaluate the match count according to the min, max values */
-    if (sysData.state === id.EMPTY || repCount >= op.min) {
+    if (sysData.state === id.EMPTY || repCount >= min) {
       sysData.state = repPhrase === 0 ? id.EMPTY : id.MATCH;
       sysData.phraseLength = repPhrase;
     } else {
       sysData.state = id.NOMATCH;
       sysData.phraseLength = 0;
       if (this._ast) {
-        this._ast.setLength(astLength);
+        this._ast.setLength?.(astLength);
       }
     }
   }
@@ -478,24 +502,29 @@ export default class Parser {
   // Note that the `AST` is a separate object, but `RNM` calls its functions to create its nodes.
   // See [`ast.js`](./ast.html) for usage.
   _opRNM(opIndex: number, phraseIndex: number, sysData: SysData): void {
-    let astLength;
-    let astDefined;
-    let savedOpcodes;
-    const op = this._opcodes[opIndex];
-    const rule = this._rules[op.index];
+    let astLength: number | undefined;
+    let astDefined = false;
+    let savedOpcodes: GrammarOpcode[] | null = null;
+    const op = this._getOpcode(opIndex);
+    const ruleIndex = op.index ?? -1;
+    if (ruleIndex < 0 || ruleIndex >= this._rules.length) {
+      throw new Error(`${THIS_FILE}invalid rule reference: ${ruleIndex}`);
+    }
+    const rule = this._rules[ruleIndex];
     const callback = this._ruleCallbacks[rule.index];
     /* ignore AST in look ahead */
     if (this._lookAhead === 0) {
-      astDefined = this._ast && this._ast.ruleDefined(op.index);
-      if (astDefined) {
+      astDefined =
+        this._ast !== null && typeof this._ast.ruleDefined === 'function' && this._ast.ruleDefined(ruleIndex);
+      if (astDefined && this._ast) {
         astLength = this._ast.getLength();
-        this._ast.down(op.index, this._rules[op.index].name);
+        this._ast.down?.(ruleIndex, rule.name);
       }
     }
     if (callback === null) {
       /* no callback - just execute the rule */
       savedOpcodes = this._opcodes;
-      this._opcodes = rule.opcodes;
+      this._opcodes = rule.opcodes ?? [];
       this._opExecute(0, phraseIndex, sysData);
       this._opcodes = savedOpcodes;
     } else {
@@ -506,7 +535,7 @@ export default class Parser {
       validateRnmCallbackResult(rule, sysData, charsLeft, true);
       if (sysData.state === id.ACTIVE) {
         savedOpcodes = this._opcodes;
-        this._opcodes = rule.opcodes;
+        this._opcodes = rule.opcodes ?? [];
         this._opExecute(0, phraseIndex, sysData);
         this._opcodes = savedOpcodes;
         sysData.ruleIndex = rule.index;
@@ -514,11 +543,11 @@ export default class Parser {
         validateRnmCallbackResult(rule, sysData, charsLeft, false);
       } /* implied else clause: just accept the callback sysData - RNM acting as UDT */
     }
-    if (this._lookAhead === 0 && astDefined) {
+    if (this._lookAhead === 0 && astDefined && this._ast) {
       if (sysData.state === id.NOMATCH) {
-        this._ast.setLength(astLength);
+        this._ast.setLength?.(astLength);
       } else {
-        this._ast.up(op.index, rule.name, phraseIndex, sysData.phraseLength);
+        this._ast.up?.(ruleIndex, rule.name, phraseIndex, sysData.phraseLength);
       }
     }
   }
@@ -528,30 +557,38 @@ export default class Parser {
   // `UDT`s act as terminals for phrase recognition but as named rules for `AST` nodes.
   // See [`ast.js`](./ast.html) for usage.
   _opUDT(opIndex: number, phraseIndex: number, sysData: SysData): void {
-    let astLength;
-    let astIndex;
-    let astDefined;
-    const op = this._opcodes[opIndex];
-    const udt = this._udts[op.index];
+    let astLength: number | undefined;
+    let astIndex: number | undefined;
+    let astDefined = false;
+    const op = this._getOpcode(opIndex);
+    const udtIndex = op.index ?? -1;
+    if (udtIndex < 0 || udtIndex >= this._udts.length) {
+      throw new Error(`${THIS_FILE}invalid UDT reference: ${udtIndex}`);
+    }
+    const udt = this._udts[udtIndex];
     sysData.udtIndex = udt.index;
     /* ignore AST in look ahead */
     if (this._lookAhead === 0) {
-      astDefined = this._ast && this._ast.udtDefined(op.index);
-      if (astDefined) {
-        astIndex = this._rules.length + op.index;
+      astDefined = this._ast !== null && typeof this._ast.udtDefined === 'function' && this._ast.udtDefined(udtIndex);
+      if (astDefined && this._ast) {
+        astIndex = this._rules.length + udtIndex;
         astLength = this._ast.getLength();
-        this._ast.down(astIndex, udt.name);
+        this._ast.down?.(astIndex, udt.name);
       }
     }
     /* call the UDT */
     const charsLeft = this._chars.length - phraseIndex;
-    this._udtCallbacks[op.index](sysData, this._chars, phraseIndex, this._userData);
+    const callback = this._udtCallbacks[udtIndex];
+    if (!callback) {
+      throw new Error(`${THIS_FILE}missing UDT callback for ${udt.name}`);
+    }
+    callback(sysData, this._chars, phraseIndex, this._userData);
     validateUdtCallbackResult(udt, sysData, charsLeft);
-    if (this._lookAhead === 0 && astDefined) {
+    if (this._lookAhead === 0 && astDefined && this._ast && astIndex !== undefined) {
       if (sysData.state === id.NOMATCH) {
-        this._ast.setLength(astLength);
+        this._ast.setLength?.(astLength);
       } else {
-        this._ast.up(astIndex, udt.name, phraseIndex, sysData.phraseLength);
+        this._ast.up?.(astIndex, udt.name, phraseIndex, sysData.phraseLength);
       }
     }
   }
@@ -607,10 +644,12 @@ export default class Parser {
   // Succeeds if the single first character of the phrase is
   // within the `min - max` range.
   _opTRG(opIndex: number, phraseIndex: number, sysData: SysData): void {
-    const op = this._opcodes[opIndex];
+    const op = this._getOpcode(opIndex);
+    const min = op.min ?? 0;
+    const max = op.max ?? 0;
     sysData.state = id.NOMATCH;
     if (phraseIndex < this._chars.length) {
-      if (op.min <= this._chars[phraseIndex] && this._chars[phraseIndex] <= op.max) {
+      if (min <= this._chars[phraseIndex] && this._chars[phraseIndex] <= max) {
         sysData.state = id.MATCH;
         sysData.phraseLength = 1;
       }
@@ -625,12 +664,13 @@ export default class Parser {
   // Phrase length of zero is not allowed.
   // Empty phrases can only be defined with `TLS` operators.
   _opTBS(opIndex: number, phraseIndex: number, sysData: SysData): void {
-    const op = this._opcodes[opIndex];
-    const len = op.string.length;
+    const op = this._getOpcode(opIndex);
+    const literal = op.string ?? [];
+    const len = literal.length;
     sysData.state = id.NOMATCH;
     if (phraseIndex + len <= this._chars.length) {
       for (let i = 0; i < len; i += 1) {
-        if (this._chars[phraseIndex + i] !== op.string[i]) {
+        if (this._chars[phraseIndex + i] !== literal[i]) {
           return;
         }
       }
@@ -646,9 +686,10 @@ export default class Parser {
   // `apg` will fail for empty `TBS`, case-sensitive strings (`''`) or
   // zero repetitions (`0*0RuleName` or `0RuleName`).
   _opTLS(opIndex: number, phraseIndex: number, sysData: SysData): void {
-    const op = this._opcodes[opIndex];
+    const op = this._getOpcode(opIndex);
+    const literal = op.string ?? [];
     sysData.state = id.NOMATCH;
-    const len = op.string.length;
+    const len = literal.length;
     if (len === 0) {
       /* EMPTY match allowed for TLS */
       sysData.state = id.EMPTY;
@@ -660,7 +701,7 @@ export default class Parser {
         if (code >= 65 && code <= 90) {
           code += 32;
         }
-        if (code !== op.string[i]) {
+        if (code !== literal[i]) {
           return;
         }
       }
@@ -676,7 +717,7 @@ export default class Parser {
   // However, the parser calls their API to build the object data records.
   // See [`trace.js`](./trace.html) and [`stats.js`](./stats.html) for their usage.
   _opExecute(opIndex: number, phraseIndex: number, sysData: SysData): void {
-    const op = this._opcodes[opIndex];
+    const op = this._getOpcode(opIndex);
     this._nodeHits += 1;
     if (this._nodeHits > this._limitNodeHits) {
       throw new Error(`parser: maximum number of node hits exceeded: ${this._limitNodeHits}`);
@@ -691,8 +732,12 @@ export default class Parser {
     sysData.state = id.ACTIVE;
     sysData.phraseLength = 0;
     sysData.lookAhead = this._lookAhead;
-    this._trace?.down(op, phraseIndex, sysData.lookAhead);
-    this._traceSabnf?.down(op);
+    if (this._trace?.down) {
+      this._trace.down(op, phraseIndex, sysData.lookAhead);
+    }
+    if (this._traceSabnf?.down) {
+      this._traceSabnf.down(op);
+    }
     switch (op.type) {
       case id.ALT:
         this._opALT(opIndex, phraseIndex, sysData);
@@ -730,11 +775,15 @@ export default class Parser {
     if (this._lookAhead === 0 && phraseIndex + sysData.phraseLength > this._maxMatched) {
       this._maxMatched = phraseIndex + sysData.phraseLength;
     }
-    if (this._stats !== null) {
+    if (this._stats !== null && this._stats.collect) {
       this._stats.collect(op, sysData);
     }
-    this._trace?.up(op, sysData.state, phraseIndex, sysData.phraseLength, sysData.lookAhead);
-    this._traceSabnf?.up(op, sysData.state, phraseIndex, sysData.phraseLength);
+    if (this._trace?.up) {
+      this._trace.up(op, sysData.state, phraseIndex, sysData.phraseLength, sysData.lookAhead);
+    }
+    if (this._traceSabnf?.up) {
+      this._traceSabnf.up(op, sysData.state, phraseIndex, sysData.phraseLength);
+    }
     this._treeDepth -= 1;
   }
 }

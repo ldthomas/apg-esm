@@ -12,12 +12,55 @@ import scanner from './scanner.js';
 import Parser from './parser.js';
 import { attributes, showAttributes, showAttributeErrors, showRuleDependencies } from './attributes.js';
 import showRules from './show-rules.js';
+import type { GrammarObject, GrammarOpcode, GrammarRule, GrammarUdt } from '../apg-lib/types.js';
 
 const THIS_FILE = 'api.js: ';
 const CHUNK = 0x8000;
 
+interface LineInfo {
+  beginChar: number;
+  length: number;
+  lineNo: number;
+}
+
+interface GrammarError {
+  line: number;
+  char: number;
+  msg: string;
+}
+
+interface SemanticResult {
+  rules: RuleWithOpcodes[];
+  udts: GrammarUdt[];
+  lineMap: number[];
+}
+
+interface RuleWithOpcodes extends GrammarRule {
+  opcodes: GrammarOpcode[];
+}
+
+interface GrammarObjectWithCallbacks extends GrammarObject {
+  callbacks: Record<string, boolean>;
+}
+
+interface ApiState {
+  _parser: Parser;
+  _isScanned: boolean;
+  _isParsed: boolean;
+  _isTranslated: boolean;
+  _haveAttributes: boolean;
+  _attributeErrors: number;
+  _lineMap?: number[];
+  errors: GrammarError[];
+  chars: number[];
+  sabnf: string;
+  lines?: LineInfo[];
+  rules?: RuleWithOpcodes[];
+  udts?: GrammarUdt[];
+}
+
 /* Convert a phrase (array of character codes) to ASCII text. */
-function abnfToAscii(chars, beg, len) {
+function abnfToAscii(chars: number[], beg: number, len: number): string {
   let str = '';
   for (let i = beg; i < beg + len; i += 1) {
     const ch = chars[i];
@@ -44,7 +87,7 @@ function abnfToAscii(chars, beg, len) {
 }
 
 /* Translate lines (SABNF grammar) to ASCII text. */
-function linesToAscii(lines, chars) {
+function linesToAscii(lines: LineInfo[], chars: number[]): string {
   let str = 'Annotated Input Grammar';
   lines.forEach((val) => {
     str += '\n';
@@ -58,7 +101,7 @@ function linesToAscii(lines, chars) {
 }
 
 /* Display an array of errors in ASCII text. */
-function errorsToAscii(errors, lines, chars) {
+function errorsToAscii(errors: GrammarError[], lines: LineInfo[], chars: number[]): string {
   let str = '';
   errors.forEach((error) => {
     const line = lines[error.line];
@@ -80,13 +123,13 @@ function errorsToAscii(errors, lines, chars) {
 }
 
 /* Convert array of Unicode code points to JavaScript string (safe for large arrays). */
-function charsToString(chars) {
+function charsToString(chars: number[]): string {
   if (!Array.isArray(chars) || chars.length === 0) {
     return '';
   }
   let out = '';
   for (let i = 0; i < chars.length; i += CHUNK) {
-    out += String.fromCodePoint.apply(null, chars.slice(i, i + CHUNK));
+    out += String.fromCodePoint(...chars.slice(i, i + CHUNK));
   }
   return out;
 }
@@ -97,7 +140,21 @@ function charsToString(chars) {
  * to scan, parse, translate, validate attributes, and generate a grammar object or its source code.
  */
 export default class Api {
-  constructor(src) {
+  private _parser: Parser;
+  private _isScanned: boolean;
+  private _isParsed: boolean;
+  private _isTranslated: boolean;
+  private _haveAttributes: boolean;
+  private _attributeErrors: number;
+  private _lineMap?: number[];
+  public errors: GrammarError[];
+  public chars: number[];
+  public sabnf: string;
+  public lines?: LineInfo[];
+  public rules?: RuleWithOpcodes[];
+  public udts?: GrammarUdt[];
+
+  constructor(src: string | Uint8Array | Uint16Array | Uint32Array | number[]) {
     this._parser = new Parser();
     this._isScanned = false;
     this._isParsed = false;
@@ -107,7 +164,7 @@ export default class Api {
     this._lineMap = undefined;
     this.errors = [];
     if (typeof src === 'string') {
-      this.chars = Array.from(src).map((ch) => ch.codePointAt(0));
+      this.chars = Array.from(src).map((ch) => ch.codePointAt(0) ?? 0);
     } else if (src instanceof Uint8Array || src instanceof Uint16Array || src instanceof Uint32Array) {
       this.chars = Array.from(src);
     } else if (Array.isArray(src)) {
@@ -123,7 +180,7 @@ export default class Api {
    * Must be called before `parse()`.
    * @param {boolean} [strict] - If `true`, all lines must end with CRLF (`\r\n`).
    */
-  scan(strict) {
+  scan(strict?: boolean): void {
     this.lines = scanner(this.chars, this.errors, strict);
     this._isScanned = true;
   }
@@ -133,11 +190,11 @@ export default class Api {
    * @description Parses the grammar for correct SABNF syntax. Must be called after `scan()`.
    * @param {boolean} [strict] - If `true`, restricts to RFC 5234/7405 ABNF only.
    */
-  parse(strict) {
+  parse(strict?: boolean): void {
     if (!this._isScanned) {
       throw new Error(`${THIS_FILE}grammar not scanned`);
     }
-    this._parser.syntax(this.chars, this.lines, this.errors, strict);
+    this._parser.syntax(this.chars, this.lines ?? [], this.errors, strict);
     this._isParsed = true;
   }
 
@@ -146,12 +203,12 @@ export default class Api {
    * @description Translates the grammar syntax tree into rule and UDT opcode arrays.
    * Must be called after `parse()`. On success, populates `this.rules` and `this.udts`.
    */
-  translate() {
+  translate(): void {
     if (!this._isParsed) {
       throw new Error(`${THIS_FILE}grammar not scanned and parsed`);
     }
-    const ret = this._parser.semantic(this.chars, this.lines, this.errors);
-    if (this.errors.length === 0) {
+    const ret = this._parser.semantic(this.chars, this.lines ?? [], this.errors) as SemanticResult | null;
+    if (this.errors.length === 0 && ret) {
       this.rules = ret.rules;
       this.udts = ret.udts;
       this._lineMap = ret.lineMap;
@@ -165,11 +222,11 @@ export default class Api {
    * Must be called after `translate()`.
    * @returns {number} Number of fatal attribute errors found.
    */
-  attributes() {
+  attributes(): number {
     if (!this._isTranslated) {
       throw new Error(`${THIS_FILE}grammar not scanned, parsed and translated`);
     }
-    this._attributeErrors = attributes(this.rules, this.udts, this._lineMap, this.errors);
+    this._attributeErrors = attributes(this.rules ?? [], this.udts ?? [], this._lineMap ?? [], this.errors);
     this._haveAttributes = true;
     return this._attributeErrors;
   }
@@ -180,7 +237,7 @@ export default class Api {
    * in a single call. Halts early and leaves errors in `this.errors` if any step fails.
    * @param {boolean} [strict] - If `true`, restricts to RFC 5234/7405 ABNF only.
    */
-  generate(strict) {
+  generate(strict?: boolean): void {
     this.lines = scanner(this.chars, this.errors, strict);
     if (this.errors.length) {
       return;
@@ -189,14 +246,14 @@ export default class Api {
     if (this.errors.length) {
       return;
     }
-    const ret = this._parser.semantic(this.chars, this.lines, this.errors);
-    if (this.errors.length) {
+    const ret = this._parser.semantic(this.chars, this.lines, this.errors) as SemanticResult | null;
+    if (this.errors.length || !ret) {
       return;
     }
     this.rules = ret.rules;
     this.udts = ret.udts;
     this._lineMap = ret.lineMap;
-    this._attributeErrors = attributes(this.rules, this.udts, this._lineMap, this.errors);
+    this._attributeErrors = attributes(this.rules, this.udts, this._lineMap ?? [], this.errors);
     this._haveAttributes = true;
   }
 
@@ -206,11 +263,11 @@ export default class Api {
    * @param {string} [order='index'] - `'index'`/`'i'` for definition order, `'alpha'`/`'a'` for alphabetical.
    * @returns {string} Formatted multi-line string.
    */
-  displayRules(order = 'index') {
+  displayRules(order: string = 'index'): string {
     if (!this._isTranslated) {
       throw new Error(`${THIS_FILE}grammar not scanned, parsed and translated`);
     }
-    return showRules(this.rules, this.udts, order);
+    return showRules(this.rules ?? [], this.udts ?? [], order);
   }
 
   /**
@@ -219,7 +276,7 @@ export default class Api {
    * @param {string} [order='index'] - `'index'`/`'i'`, `'alpha'`/`'a'`, or `'type'`/`'t'`.
    * @returns {string} Formatted multi-line string.
    */
-  displayRuleDependencies(order = 'index') {
+  displayRuleDependencies(order: string = 'index'): string {
     if (!this._haveAttributes) {
       throw new Error(`${THIS_FILE}no attributes - must be preceded by call to attributes()`);
     }
@@ -232,12 +289,12 @@ export default class Api {
    * @param {string} [order='index'] - `'index'`/`'i'`, `'alpha'`/`'a'`, or `'type'`/`'t'`.
    * @returns {string} Formatted multi-line string.
    */
-  displayAttributes(order = 'index') {
+  displayAttributes(order: string = 'index'): string {
     if (!this._haveAttributes) {
       throw new Error(`${THIS_FILE}no attributes - must be preceded by call to attributes()`);
     }
     if (this._attributeErrors) {
-      showAttributeErrors(order);
+      showAttributeErrors();
     }
     return showAttributes(order);
   }
@@ -248,7 +305,7 @@ export default class Api {
    * Requires `attributes()` first.
    * @returns {string} Formatted multi-line string listing only rules with fatal attribute errors.
    */
-  displayAttributeErrors() {
+  displayAttributeErrors(): string {
     if (!this._haveAttributes) {
       throw new Error(`${THIS_FILE}no attributes - must be preceded by call to attributes()`);
     }
@@ -261,15 +318,15 @@ export default class Api {
    * Requires a successful `attributes()` call with zero errors.
    * @returns {string} JavaScript source code for the grammar constructor function.
    */
-  toSource(typescript) {
-    typescript = !!typescript;
+  toSource(typescript?: boolean): string {
+    const useTypeScript = !!typescript;
     if (!this._haveAttributes) {
       throw new Error(`${THIS_FILE}can't generate parser source - must be preceded by call to attributes()`);
     }
     if (this._attributeErrors) {
       throw new Error(`${THIS_FILE}can't generate parser source - attributes have ${this._attributeErrors} errors`);
     }
-    return this._parser.generateSource(this.chars, this.lines, this.rules, this.udts, typescript);
+    return this._parser.generateSource(this.chars, this.lines ?? [], this.rules ?? [], this.udts ?? [], useTypeScript);
   }
 
   /**
@@ -278,14 +335,14 @@ export default class Api {
    * Requires a successful `attributes()` call with zero errors.
    * @returns {Object} Grammar object with `rules`, `udts`, and `toString()` method.
    */
-  toObject() {
+  toObject(): GrammarObjectWithCallbacks {
     if (!this._haveAttributes) {
       throw new Error(`${THIS_FILE}can't generate parser source - must be preceded by call to attributes()`);
     }
     if (this._attributeErrors) {
       throw new Error(`${THIS_FILE}can't generate parser source - attributes have ${this._attributeErrors} errors`);
     }
-    return this._parser.generateObject(this.sabnf, this.rules, this.udts);
+    return this._parser.generateObject(this.sabnf, this.rules ?? [], this.udts ?? []);
   }
 
   /**
@@ -293,8 +350,8 @@ export default class Api {
    * @description Returns all collected errors as a human-readable ASCII string.
    * @returns {string} Formatted error listing.
    */
-  errorsToAscii() {
-    return errorsToAscii(this.errors, this.lines, this.chars);
+  errorsToAscii(): string {
+    return errorsToAscii(this.errors, this.lines ?? [], this.chars);
   }
 
   /**
@@ -302,7 +359,7 @@ export default class Api {
    * @description Returns an annotated listing of the SABNF grammar source lines.
    * @returns {string} Formatted annotated grammar listing.
    */
-  linesToAscii() {
-    return linesToAscii(this.lines, this.chars);
+  linesToAscii(): string {
+    return linesToAscii(this.lines ?? [], this.chars);
   }
 }

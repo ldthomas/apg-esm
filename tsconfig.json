@@ -10,7 +10,8 @@
     "emitDeclarationOnly": false,
     "allowJs": true,
     "checkJs": false,
-    "strict": false
+    "strict": true,
+    "types": ["node"]
   },
   "include": ["src"],
   "exclude": ["dist", "node_modules"]

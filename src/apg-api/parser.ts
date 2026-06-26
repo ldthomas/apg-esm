@@ -13,11 +13,57 @@ import Ast from '../apg-lib/ast.js';
 import { callbacks as synCallbacks } from './syntax-callbacks.js';
 import { callbacks as semCallbacks } from './semantic-callbacks.js';
 import SabnfGrammar from './sabnf-grammar.js';
+import type { GrammarObject, GrammarOpcode, GrammarRule, GrammarUdt } from '../apg-lib/types.js';
 
 const THIS_FILE = 'parser: ';
 
+interface LineInfo {
+  beginChar: number;
+  length: number;
+  lineNo: number;
+}
+
+interface SyntaxError {
+  line: number;
+  char: number;
+  msg: string;
+}
+
+interface SyntaxData {
+  errors: SyntaxError[];
+  strict: boolean;
+  lines: LineInfo[];
+  findLine(lines: LineInfo[], charIndex: number, charLength: number): number;
+  charsLength: number;
+  ruleCount: number;
+}
+
+interface GrammarRuleWithOpcodes extends GrammarRule {
+  opcodes: GrammarOpcode[];
+}
+
+interface SemanticData {
+  errors: SyntaxError[];
+  lines: LineInfo[];
+  findLine(lines: LineInfo[], charIndex: number, charLength: number): number;
+  charsLength: number;
+  rules: GrammarRuleWithOpcodes[];
+  udts: GrammarUdt[];
+  rulesLineMap: Array<{ line: number; char: number }>;
+}
+
+interface SemanticResult {
+  rules: GrammarRuleWithOpcodes[];
+  udts: GrammarUdt[];
+  lineMap: number[];
+}
+
+interface GrammarObjectWithCallbacks extends GrammarObject {
+  callbacks: Record<string, boolean>;
+}
+
 /* find the line containing the given character index */
-function findLine(lines, charIndex, charLength) {
+function findLine(lines: LineInfo[], charIndex: number, charLength: number): number {
   if (charIndex < 0 || charIndex >= charLength) {
     return -1;
   }
@@ -37,12 +83,12 @@ function findLine(lines, charIndex, charLength) {
   return -1;
 }
 
-function translateIndex(map, index) {
+function translateIndex(map: Array<number | null>, index: number): number {
   let ret = -1;
   if (index < map.length) {
     for (let i = index; i < map.length; i += 1) {
       if (map[i] !== null) {
-        ret = map[i];
+        ret = map[i] as number;
         break;
       }
     }
@@ -51,15 +97,15 @@ function translateIndex(map, index) {
 }
 
 /* helper function when removing redundant opcodes */
-function reduceOpcodes(rules) {
+function reduceOpcodes(rules: GrammarRuleWithOpcodes[]): void {
   rules.forEach((rule) => {
-    const opcodes = [];
-    const map = [];
+    const opcodes: GrammarOpcode[] = [];
+    const map: Array<number | null> = [];
     let reducedIndex = 0;
     rule.opcodes.forEach((op) => {
-      if (op.type === ids.ALT && op.children.length === 1) {
+      if (op.type === ids.ALT && op.children && op.children.length === 1) {
         map.push(null);
-      } else if (op.type === ids.CAT && op.children.length === 1) {
+      } else if (op.type === ids.CAT && op.children && op.children.length === 1) {
         map.push(null);
       } else if (op.type === ids.REP && op.min === 1 && op.max === 1) {
         map.push(null);
@@ -73,8 +119,11 @@ function reduceOpcodes(rules) {
     /* translate original opcode indexes to the reduced set. */
     opcodes.forEach((op) => {
       if (op.type === ids.ALT || op.type === ids.CAT) {
-        for (let i = 0; i < op.children.length; i += 1) {
-          op.children[i] = translateIndex(map, op.children[i]);
+        const children = op.children;
+        if (children) {
+          for (let i = 0; i < children.length; i += 1) {
+            children[i] = translateIndex(map, children[i]);
+          }
         }
       }
     });
@@ -89,6 +138,10 @@ function reduceOpcodes(rules) {
  * then generates JavaScript grammar object source or an in-memory grammar object.
  */
 export default class SabnfParser {
+  private _sabnfGrammar: GrammarObject;
+  private _parser: Parser;
+  private _ast: Ast;
+
   constructor() {
     this._sabnfGrammar = new SabnfGrammar();
     this._parser = new Parser(this._sabnfGrammar);
@@ -115,8 +168,15 @@ export default class SabnfParser {
    * @param {Object[]} errors - Array to which error objects are appended.
    * @param {boolean} [strict] - If `true`, restrict to RFC 5234/7405 ABNF only.
    */
-  syntax(chars, lines, errors, strict) {
-    const data = {};
+  syntax(chars: number[], lines: LineInfo[], errors: SyntaxError[], strict?: boolean): void {
+    const data: SyntaxData = {
+      errors,
+      strict: !!strict,
+      lines,
+      findLine,
+      charsLength: chars.length,
+      ruleCount: 0,
+    };
     data.errors = errors;
     data.strict = !!strict;
     data.lines = lines;
@@ -143,12 +203,16 @@ export default class SabnfParser {
    * @param {Object[]} errors - Array to which error objects are appended.
    * @returns {{ rules: Object[], udts: Object[], lineMap: number[] }|null} Opcode data, or `null` on error.
    */
-  semantic(chars, lines, errors) {
-    const data = {};
-    data.errors = errors;
-    data.lines = lines;
-    data.findLine = findLine;
-    data.charsLength = chars.length;
+  semantic(chars: number[], lines: LineInfo[], errors: SyntaxError[]): SemanticResult | null {
+    const data: SemanticData = {
+      errors,
+      lines,
+      findLine,
+      charsLength: chars.length,
+      rules: [],
+      udts: [],
+      rulesLineMap: [],
+    };
     this._ast.translate(data);
     if (errors.length) {
       return null;
@@ -161,7 +225,7 @@ export default class SabnfParser {
     return {
       rules: data.rules,
       udts: data.udts,
-      lineMap: data.rulesLineMap,
+      lineMap: [],
     };
   }
   /**
@@ -174,14 +238,20 @@ export default class SabnfParser {
    * @param {Object[]} udts - Array of UDT objects.
    * @returns {string} JavaScript source code for the grammar object constructor.
    */
-  generateSource(chars, lines, rules, udts, typescript) {
+  generateSource(
+    chars: number[],
+    lines: LineInfo[],
+    rules: GrammarRuleWithOpcodes[],
+    udts: GrammarUdt[],
+    typescript?: boolean,
+  ): string {
     let source = '';
-    let i;
+    let i: number;
     let opcodeCount = 0;
     let charCodeMin = Infinity;
     let charCodeMax = 0;
-    const ruleNames = [];
-    const udtNames = [];
+    const ruleNames: string[] = [];
+    const udtNames: string[] = [];
     let alt = 0;
     let cat = 0;
     let rnm = 0;
@@ -220,33 +290,37 @@ export default class SabnfParser {
             break;
           case ids.TLS:
             tls += 1;
-            for (i = 0; i < op.string.length; i += 1) {
-              if (op.string[i] < charCodeMin) {
-                charCodeMin = op.string[i];
+            for (i = 0; i < (op.string ?? []).length; i += 1) {
+              const code = op.string?.[i] ?? 0;
+              if (code < charCodeMin) {
+                charCodeMin = code;
               }
-              if (op.string[i] > charCodeMax) {
-                charCodeMax = op.string[i];
+              if (code > charCodeMax) {
+                charCodeMax = code;
               }
             }
             break;
           case ids.TBS:
             tbs += 1;
-            for (i = 0; i < op.string.length; i += 1) {
-              if (op.string[i] < charCodeMin) {
-                charCodeMin = op.string[i];
+            for (i = 0; i < (op.string ?? []).length; i += 1) {
+              const code = op.string?.[i] ?? 0;
+              if (code < charCodeMin) {
+                charCodeMin = code;
               }
-              if (op.string[i] > charCodeMax) {
-                charCodeMax = op.string[i];
+              if (code > charCodeMax) {
+                charCodeMax = code;
               }
             }
             break;
           case ids.TRG:
             trg += 1;
-            if (op.min < charCodeMin) {
-              charCodeMin = op.min;
+            const min = op.min ?? 0;
+            const max = op.max ?? 0;
+            if (min < charCodeMin) {
+              charCodeMin = min;
             }
-            if (op.max > charCodeMax) {
-              charCodeMax = op.max;
+            if (max > charCodeMax) {
+              charCodeMax = max;
             }
             break;
           default:
@@ -387,25 +461,25 @@ export default class SabnfParser {
           case ids.ALT:
             source += `    this.rules[${ruleIndex}].opcodes[${opIndex}] = { type: ${
               op.type
-            }, children: [${op.children.toString()}], gl: ${op.gl}, go: ${op.go} };// ALT\n`;
+            }, children: [${(op.children ?? []).toString()}], gl: ${op.gl}, go: ${op.go} };// ALT\n`;
             break;
           case ids.CAT:
             source += `    this.rules[${ruleIndex}].opcodes[${opIndex}] = { type: ${
               op.type
-            }, children: [${op.children.toString()}], gl: ${op.gl}, go: ${op.go} };// CAT\n`;
+            }, children: [${(op.children ?? []).toString()}], gl: ${op.gl}, go: ${op.go} };// CAT\n`;
             break;
           case ids.RNM:
-            source += `    this.rules[${ruleIndex}].opcodes[${opIndex}] = { type: ${op.type}, index: ${op.index}, gl: ${
+            source += `    this.rules[${ruleIndex}].opcodes[${opIndex}] = { type: ${op.type}, index: ${op.index ?? -1}, gl: ${
               op.gl
-            }, go: ${op.go} };// RNM(${rules[op.index].name})\n`;
+            }, go: ${op.go} };// RNM(${rules[op.index ?? -1]?.name ?? 'unknown'})\n`;
             break;
           case ids.UDT:
             source += `    this.rules[${ruleIndex}].opcodes[${opIndex}] = { type: ${op.type}, empty: ${
               op.empty
-            }, index: ${op.index}, gl: ${op.gl}, go: ${op.go} };// UDT(${udts[op.index].name})\n`;
+            }, index: ${op.index ?? -1}, gl: ${op.gl}, go: ${op.go} };// UDT(${udts[op.index ?? -1]?.name ?? 'unknown'})\n`;
             break;
           case ids.REP:
-            source += `    this.rules[${ruleIndex}].opcodes[${opIndex}] = { type: ${op.type}, min: ${op.min}, max: ${op.max}, gl: ${op.gl}, go: ${op.go} };// REP\n`;
+            source += `    this.rules[${ruleIndex}].opcodes[${opIndex}] = { type: ${op.type}, min: ${op.min ?? 0}, max: ${op.max ?? 0}, gl: ${op.gl}, go: ${op.go} };// REP\n`;
             break;
           case ids.AND:
             source += `    this.rules[${ruleIndex}].opcodes[${opIndex}] = { type: ${op.type}, gl: ${op.gl}, go: ${op.go} };// AND\n`;
@@ -416,15 +490,15 @@ export default class SabnfParser {
           case ids.TLS:
             source += `    this.rules[${ruleIndex}].opcodes[${opIndex}] = { type: ${
               op.type
-            }, string: [${op.string.toString()}], gl: ${op.gl}, go: ${op.go} };// TLS\n`;
+            }, string: [${(op.string ?? []).toString()}], gl: ${op.gl}, go: ${op.go} };// TLS\n`;
             break;
           case ids.TBS:
             source += `    this.rules[${ruleIndex}].opcodes[${opIndex}] = { type: ${
               op.type
-            }, string: [${op.string.toString()}], gl: ${op.gl}, go: ${op.go} };// TBS\n`;
+            }, string: [${(op.string ?? []).toString()}], gl: ${op.gl}, go: ${op.go} };// TBS\n`;
             break;
           case ids.TRG:
-            source += `    this.rules[${ruleIndex}].opcodes[${opIndex}] = { type: ${op.type}, min: ${op.min}, max: ${op.max}, gl: ${op.gl}, go: ${op.go} };// TRG\n`;
+            source += `    this.rules[${ruleIndex}].opcodes[${opIndex}] = { type: ${op.type}, min: ${op.min ?? 0}, max: ${op.max ?? 0}, gl: ${op.gl}, go: ${op.go} };// TRG\n`;
             break;
           default:
             throw new Error('parser.js: ~143: unrecognized opcode');
@@ -439,7 +513,7 @@ export default class SabnfParser {
       source += '  toString() {\n';
     }
     source += '    let str = "";\n';
-    let str;
+    let str = '';
     lines.forEach((line) => {
       const end = line.beginChar + line.length;
       str = '';
@@ -485,12 +559,19 @@ export default class SabnfParser {
    * @param {Object[]} udts - Array of UDT objects, as produced by `semantic()`.
    * @returns {Object} Grammar object with `grammarObject`, `callbacks`, `rules`, `udts`, and `toString()`.
    */
-  generateObject(stringArg, rules, udts) {
-    const obj = {};
-    const ruleNames = [];
-    const udtNames = [];
+  generateObject(stringArg: string, rules: GrammarRuleWithOpcodes[], udts: GrammarUdt[]): GrammarObjectWithCallbacks {
+    const obj: GrammarObjectWithCallbacks = {
+      grammarObject: 'grammarObject',
+      callbacks: {},
+      rules,
+      udts,
+      toString() {
+        return stringArg;
+      },
+    };
+    const ruleNames: string[] = [];
+    const udtNames: string[] = [];
     const string = stringArg.slice(0);
-    obj.grammarObject = 'grammarObject';
     rules.forEach((rule) => {
       ruleNames.push(rule.lower);
     });
@@ -501,7 +582,7 @@ export default class SabnfParser {
       });
       udtNames.sort();
     }
-    obj.callbacks = [];
+    obj.callbacks = {};
     ruleNames.forEach((name) => {
       obj.callbacks[name] = false;
     });

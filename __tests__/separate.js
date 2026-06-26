@@ -19,8 +19,8 @@
 // - The target grammar object: APG parses the SABNF grammar and generates the JavaScript source for a target grammar object.
 // - The final target parser: The user then develops the final target parser using the generated target grammar
 // object and the APG parsing library, **apg-lib**.
-import Api from '../src/apg-api/api.js';
-import Parser from '../src/apg-lib/parser.js';
+import Api from '../dist/apg-api/api.js';
+import Parser from '../dist/apg-lib/parser.js';
 
 export default function separate() {
   /* the SABNF grammar */

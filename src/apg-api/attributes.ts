@@ -60,11 +60,59 @@
  * Non-fatal attributes: **nested recursion**, **right recursion**, **empty string**.
  */
 import id from '../apg-lib/identifiers.js';
+import type { GrammarRule, GrammarUdt } from '../apg-lib/types.js';
 import { ruleAttributes, showAttributes, showAttributeErrors } from './rule-attributes.js';
 import { ruleDependencies, showRuleDependencies } from './rule-dependencies.js';
 
+interface AttributeInfo {
+  left: boolean;
+  nested: boolean;
+  right: boolean;
+  empty: boolean;
+  finite: boolean;
+  cyclic: boolean;
+  leaf: boolean;
+  isOpen: boolean;
+  isComplete: boolean;
+  rule: GrammarRule | null;
+}
+
+interface RuleDependencyInfo {
+  rule: GrammarRule;
+  recursiveType: number;
+  groupNumber: number;
+  refersTo: boolean[];
+  refersToUdt: boolean[];
+  referencedBy: boolean[];
+}
+
+interface AttributeError {
+  line: number;
+  char: number;
+  msg: string;
+}
+
 class State {
-  constructor(rules, udts) {
+  rules: GrammarRule[];
+  udts: GrammarUdt[];
+  ruleCount: number;
+  udtCount: number;
+  startRule: number;
+  dependenciesComplete: boolean;
+  attributesComplete: boolean;
+  isMutuallyRecursive: boolean;
+  ruleIndexes: number[];
+  ruleAlphaIndexes: number[];
+  ruleTypeIndexes: number[];
+  udtIndexes: number[];
+  udtAlphaIndexes: number[];
+  attrsErrorCount: number;
+  attrs: AttributeInfo[];
+  attrsErrors: AttributeInfo[];
+  attrsWorking: AttributeInfo[];
+  ruleDeps: RuleDependencyInfo[];
+
+  constructor(rules: GrammarRule[], udts: GrammarUdt[]) {
     this.rules = rules;
     this.udts = udts;
     this.ruleCount = rules.length;
@@ -94,8 +142,7 @@ class State {
     this.compRulesGroup = this.compRulesGroup.bind(this);
   }
 
-  // eslint-disable-next-line class-methods-use-this
-  attrGen(rule) {
+  attrGen(rule?: GrammarRule): AttributeInfo {
     return {
       left: false,
       nested: false,
@@ -106,12 +153,11 @@ class State {
       leaf: false,
       isOpen: false,
       isComplete: false,
-      rule,
+      rule: rule ?? null,
     };
   }
 
-  // eslint-disable-next-line class-methods-use-this
-  attrInit(attr) {
+  attrInit(attr: AttributeInfo): void {
     attr.left = false;
     attr.nested = false;
     attr.right = false;
@@ -123,7 +169,7 @@ class State {
     attr.isComplete = false;
   }
 
-  attrCopy(dst, src) {
+  attrCopy(dst: AttributeInfo, src: AttributeInfo): void {
     dst.left = src.left;
     dst.nested = src.nested;
     dst.right = src.right;
@@ -136,8 +182,8 @@ class State {
     dst.rule = src.rule;
   }
 
-  rdGen(rule, ruleCount, udtCount) {
-    const ret = {
+  rdGen(rule: GrammarRule, ruleCount: number, udtCount: number): RuleDependencyInfo {
+    return {
       rule,
       recursiveType: id.ATTR_N,
       groupNumber: -1,
@@ -145,10 +191,9 @@ class State {
       refersToUdt: this.falseArray(udtCount),
       referencedBy: this.falseArray(ruleCount),
     };
-    return ret;
   }
 
-  typeToString(recursiveType) {
+  typeToString(recursiveType: number): string {
     switch (recursiveType) {
       case id.ATTR_N:
         return ' N';
@@ -161,33 +206,29 @@ class State {
     }
   }
 
-  falseArray(length) {
-    const ret = [];
-    if (length > 0) {
-      for (let i = 0; i < length; i += 1) {
-        ret.push(false);
-      }
+  falseArray(length: number): boolean[] {
+    const ret: boolean[] = [];
+    for (let i = 0; i < length; i += 1) {
+      ret.push(false);
     }
     return ret;
   }
 
-  falsifyArray(a) {
+  falsifyArray(a: boolean[]): void {
     for (let i = 0; i < a.length; i += 1) {
       a[i] = false;
     }
   }
 
-  indexArray(length) {
-    const ret = [];
-    if (length > 0) {
-      for (let i = 0; i < length; i += 1) {
-        ret.push(i);
-      }
+  indexArray(length: number): number[] {
+    const ret: number[] = [];
+    for (let i = 0; i < length; i += 1) {
+      ret.push(i);
     }
     return ret;
   }
 
-  compRulesAlpha(left, right) {
+  compRulesAlpha(left: number, right: number): number {
     if (this.rules[left].lower < this.rules[right].lower) {
       return -1;
     }
@@ -197,7 +238,7 @@ class State {
     return 0;
   }
 
-  compUdtsAlpha(left, right) {
+  compUdtsAlpha(left: number, right: number): number {
     if (this.udts[left].lower < this.udts[right].lower) {
       return -1;
     }
@@ -207,7 +248,7 @@ class State {
     return 0;
   }
 
-  compRulesType(left, right) {
+  compRulesType(left: number, right: number): number {
     if (this.ruleDeps[left].recursiveType < this.ruleDeps[right].recursiveType) {
       return -1;
     }
@@ -217,7 +258,7 @@ class State {
     return 0;
   }
 
-  compRulesGroup(left, right) {
+  compRulesGroup(left: number, right: number): number {
     if (this.ruleDeps[left].recursiveType === id.ATTR_MR && this.ruleDeps[right].recursiveType === id.ATTR_MR) {
       if (this.ruleDeps[left].groupNumber < this.ruleDeps[right].groupNumber) {
         return -1;
@@ -233,27 +274,24 @@ class State {
 /**
  * @function attributes
  * @description Validates rule attributes and returns the number of attribute errors found.
- * @param {Object[]} [rules=[]] - Array of rule objects from the API translator.
- * @param {Object[]} [udts=[]] - Array of UDT objects from the API translator.
- * @param {number[]} [lineMap=[]] - Array mapping rule indexes to grammar line numbers.
- * @param {Object[]} [errors=[]] - Array to which error objects are appended.
- * @returns {number} The count of fatal attribute errors (left recursion, cyclic, infinite).
+ * @param rules - Array of rule objects from the API translator.
+ * @param udts - Array of UDT objects from the API translator.
+ * @param lineMap - Array mapping rule indexes to grammar line numbers (reserved, currently unused).
+ * @param errors - Array to which error objects are appended.
+ * @returns The count of fatal attribute errors (left recursion, cyclic, infinite).
  */
-function attributes(rules = [], udts = [], lineMap = [], errors = []) {
+function attributes(
+  rules: GrammarRule[] = [],
+  udts: GrammarUdt[] = [],
+  lineMap: number[] = [],
+  errors: AttributeError[] = [],
+): number {
   const state = new State(rules, udts);
-
-  // Determine all rule dependencies
-  //  - which rules each rule refers to
-  //  - which rules reference each rule
   ruleDependencies(state);
-
-  // Determine the attributes for each rule.
   ruleAttributes(state);
   if (state.attrsErrorCount) {
     errors.push({ line: 0, char: 0, msg: `${state.attrsErrorCount} attribute errors` });
   }
-
-  // Return the number of attribute errors to the caller.
   return state.attrsErrorCount;
 }
 

@@ -13,7 +13,8 @@ import ApiCtor from '../apg-api/api.js';
 import getConfig from './command-line.js';
 
 const thisFileName = 'apg.js: ';
-function logErrors(api, header) {
+
+function logErrors(api: ApiCtor, header: string): void {
   console.log('\nORIGINAL GRAMMAR:');
   console.log(api.linesToAscii());
   console.log(`\n${header}:`);
@@ -23,11 +24,9 @@ function logErrors(api, header) {
 /**
  * @function apg
  * @description Runs the APG parser generator pipeline for the given command-line arguments.
- * Processes flags, reads input SABNF grammar files, validates the grammar, and writes the
- * generated grammar object source to the specified output file.
- * @param {string[]} args - Command-line arguments (typically `process.argv.slice(2)`).
+ * @param args - Command-line arguments (typically `process.argv.slice(2)`).
  */
-export default function apg(args) {
+export default function apg(args: string[]): void {
   try {
     /* Get command line parameters and set up the configuration accordingly. */
     const config = getConfig(args);
@@ -46,6 +45,9 @@ export default function apg(args) {
     }
 
     /* Get and validate the input SABNF grammar. */
+    if (!config.src) {
+      throw new Error(`${thisFileName}no input grammar source`);
+    }
     const api = new ApiCtor(config.src);
 
     api.scan(config.strict);

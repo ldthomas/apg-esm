@@ -15,8 +15,8 @@ const THIS_FILE = 'utilities.js: ';
 /* translate (implied) phrase beginning character and length to actual first and last character indexes */
 /* used by multiple phrase handling functions */
 function getBounds(length: number, begArg: number | undefined, len: number | undefined): { beg: number; end: number } {
-  let end: number;
-  let beg = begArg;
+  let end = 0;
+  let beg = begArg ?? 0;
   const TRUE = true;
   while (TRUE) {
     if (length <= 0) {
@@ -60,8 +60,8 @@ function getBounds(length: number, begArg: number | undefined, len: number | und
  * @returns {string} The resulting string, or `''` if the range is empty.
  */
 export function charsToString(chars: number[], phraseIndex?: number, phraseLength?: number): string {
-  let beg;
-  let end;
+  let beg = 0;
+  let end = 0;
   if (typeof phraseIndex === 'number') {
     if (phraseIndex >= chars.length) {
       return '';
@@ -96,7 +96,7 @@ export function charsToString(chars: number[], phraseIndex?: number, phraseLengt
  * @returns {number[]} Array of integer Unicode code-point values.
  */
 export function stringToChars(string: string): number[] {
-  return Array.from(string).map((ch) => ch.codePointAt(0));
+  return Array.from(string).map((ch) => ch.codePointAt(0) ?? 0);
 }
 /**
  * @function opcodeToString
