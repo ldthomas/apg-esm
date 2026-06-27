@@ -1,7 +1,7 @@
 {
   "source": {
-    "include": ["./src"],
-    "exclude": ["src/apg-api/sabnf-grammar.js", "src/apg-api/scanner-grammar.js"],
+    "include": ["./dist"],
+    "exclude": ["dist/apg-api/sabnf-grammar.js", "dist/apg-api/scanner-grammar.js"],
     "includePattern": ".+\\.js$"
   },
   "plugins": ["plugins/markdown"],

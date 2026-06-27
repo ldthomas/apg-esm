@@ -2,9 +2,10 @@
   "name": "apg-esm",
   "version": "1.1.0",
   "type": "module",
-  "description": "JavaScript APG, an ABNF Parser Generator",
+  "description": "TypeScript APG, an ABNF Parser Generator",
   "main": "dist/index.js",
   "module": "dist/index.js",
+  "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/index.js",
@@ -19,20 +20,10 @@
     "generator": "node dist/apg/generator.js",
     "server": "node server.js",
     "jsdoc": "jsdoc --configure jsdoc.json",
-    "fixed": "node examples/basic/fixed.js",
-    "astfixed": "node examples/basic/astFixed.js",
-    "single": "node examples/basic/single.js",
-    "separate": "node examples/basic/separate.js",
-    "ast": "node examples/ast.js",
-    "lookAhead": "node examples/lookAhead.js",
-    "stats": "node examples/stats.js",
-    "trace": "node examples/trace.js",
-    "traceSabnf": "node examples/traceSabnf.js",
-    "udt": "node examples/udt.js"
+    "prepare": "npm run build"
   },
   "files": [
-    "src",
-    "index.js",
+    "dist",
     "LICENSE.md",
     "README.md"
   ],

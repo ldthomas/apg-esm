@@ -12,10 +12,10 @@ import http from 'http';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import ApiCtor from './src/apg-api/api.js';
-import Parser from './src/apg-lib/parser.js';
-import Stats from './src/apg-lib/stats.js';
-import Trace from './src/apg-lib/trace.js';
+import ApiCtor from './dist/apg-api/api.js';
+import Parser from './dist/apg-lib/parser.js';
+import Stats from './dist/apg-lib/stats.js';
+import Trace from './dist/apg-lib/trace.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = 3000;
@@ -246,7 +246,7 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    const isAllowed = urlPath === '/index.js' || urlPath.startsWith('/src/');
+    const isAllowed = urlPath === '/index.js' || urlPath.startsWith('/dist/');
 
     if (isAllowed) {
       // Resolve the absolute path and verify it stays inside __dirname

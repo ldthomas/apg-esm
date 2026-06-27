@@ -5,6 +5,7 @@
 `apg-esm` updates [apg-js](https://www.npmjs.com/package/apg-js) in a number of significant ways.
 
 - Uses the more modern ESM module system
+- Has been converted to stricly typed TypeScript
 - Has been refactored for clarity and maintainability
 - Removes the `apg-exp` pattern-matching engine and its significant overhead
 - Simplifies the parse tree trace with simple text output, removing HTML file presentation
@@ -19,12 +20,12 @@ APG — an **A**BNF **P**arser **G**enerator — generates recursive-descent par
 
 ## The Generator
 
-The generator does not produce a parser directly. Instead, the `Api` class (`./src/apg-api/api.js`)
+The generator does not produce a parser directly. Instead, the `Api` class (`import { Api } from 'apg-esm';`)
 generates a grammar object — a representation of the operator-node tree defined by the `SABNF` grammar.
 It can produce either an in-memory grammar object for immediate use or a JavaScript file that exports
 an equivalent grammar object.
 
-`./src/apg/apg.js` provides command line access to the generator. To see all of the
+`./src/apg/apg.ts` or `./dist/apg/apg.js` provides command line access to the generator. To see all of the
 command line options run:
 
 ```
@@ -33,8 +34,8 @@ npm run generator -- --help
 
 ## The Parser
 
-The actual parser is in `./src/apg-lib/parser.js`. It requires a grammar object in its constructor
-and parses an input string into the SABNF rule-named phrases. See the examples in `./examples/` for set up and execution.
+The actual parser is in (`import { Parser } from 'apg-esm';`). It requires a grammar object in its constructor
+and parses an input string into the SABNF rule-named phrases. See the [examples](https://github.com/ldthomas/apg-esm-examples) repository for set up and execution.
 
 ### Tracing the Parse Tree
 
@@ -42,7 +43,8 @@ As the parser traverses the tree of operator nodes it visits each non-terminal n
 
 When the parse fails, either the SABNF grammar incorrectly describes the target language or the input string
 is not a valid language phrase. Finding the error can be difficult without knowing the actual path the parser
-took through the tree. APG provides a tracing facility for this in `./src/apg-lib/trace.js`; `./examples/trace.js` illustrates its use.
+took through the tree. APG provides a tracing facility for this in (`import { Trace } from 'apg-exm';`).
+This is demonstrated in the [examples](https://github.com/ldthomas/apg-esm-examples) repository.
 
 `apg-esm` also provides a tool to visually follow the path of the parser through the parse tree.
 This is described in more detail in the **Visualization** section below.
@@ -50,31 +52,23 @@ This is described in more detail in the **Visualization** section below.
 ### Tracing the SABNF Grammar
 
 For visualization purposes, `apg-esm` provides a second form of parser tracing.
-`./src/apg-lib/traceSabnf.js` will highlight the parser's position in the SABNF grammar text
-rather than in the parse tree. `./examples/traceSabnf.js` illustrates how to implement it
-and provides an example of what the display looks like.
+(`import { TraceSabnf } from 'apg-exm';`) will highlight the parser's position in the SABNF grammar text
+rather than in the parse tree.
+This is demonstrated in the [examples](https://github.com/ldthomas/apg-esm-examples) repository.
 This is also described in more detail in the **Visualization** section below.
-
-## Examples
-
-Setting up a parser to use `apg-esm` is only slightly different from using `apg-js`. A few examples,
-chosen to illustrate all of the main features, demonstrate the setup. These are all in the `./examples/` directory.
-Each is self-contained and displays a brief explanation of what it does in the code and output.
-Scripts, named the same as each respective example, are available to run them.
 
 ## npm
 
 To use `apg-esm` in a your project run `npm install apg-esm`. All classes and components can then
-be imported directly from `apg-esm`. To see how this is done, all of the examples
-in the `./examples` directory have a comment section illustrating how to run a similar
-example in your own project.
+be imported directly from `apg-esm`. To see how this is done,
+the [examples](https://github.com/ldthomas/apg-esm-examples) repository provides a full set of demonstrations.
 
 To use the generator to convert SABNF grammar text into a grammar object file add the following
 script to your project.
 
 ```
   "scripts": {
-    "generator": "node node_modules/apg-esm/src/apg/generator.js"
+    "generator": "node node_modules/apg-esm/dist/apg/generator.js"
   },
 
 ```

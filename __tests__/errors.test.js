@@ -289,8 +289,24 @@ describe('grammar semantic errors', () => {
     expect(api.errors.length).toBeGreaterThan(0);
     const re = /Rule name[\s\S]*previously defined/;
     const desc = api.errorsToAscii();
-    // console.log('rule previously defined errors:');
-    // console.log(desc);
+    expect(re.test(desc)).toBe(true);
+  });
+  test('empty UDT previously defined', () => {
+    const abnf = 'file = a b\na = e_udt\nb = e_udt\n';
+    api = new Api(abnf);
+    api.generate();
+    expect(api.errors.length).toBeGreaterThan(0);
+    const re = /Empty UDT name[\s\S]*previously defined/;
+    const desc = api.errorsToAscii();
+    expect(re.test(desc)).toBe(true);
+  });
+  test('non-empty UDT previously defined', () => {
+    const abnf = 'file = a b\na = u_udt\nb = u_udt\n';
+    api = new Api(abnf);
+    api.generate();
+    expect(api.errors.length).toBeGreaterThan(0);
+    const re = /Non-empty UDT name[\s\S]*previously defined/;
+    const desc = api.errorsToAscii();
     expect(re.test(desc)).toBe(true);
   });
   test('rule for incremental alternate not defined', () => {

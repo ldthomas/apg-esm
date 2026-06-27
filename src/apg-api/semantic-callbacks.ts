@@ -486,7 +486,7 @@ const semUdtEmpty: AstCallback = (state, chars, phraseIndex, phraseLength, data)
       d.errors.push({
         line: d.findLine(d.lines, phraseIndex, d.charsLength),
         char: phraseIndex,
-        msg: `Empty UDT name name '${name}' previously defined.`,
+        msg: `Empty UDT name '${name}' previously defined.`,
       });
       udtName = d.udtNames.get(name);
       if (udtName === -1) {
@@ -526,7 +526,7 @@ const semUdtNonEmpty: AstCallback = (state, chars, phraseIndex, phraseLength, da
       d.errors.push({
         line: d.findLine(d.lines, phraseIndex, d.charsLength),
         char: phraseIndex,
-        msg: `Non-empty UDT name name '${name}' previously defined.`,
+        msg: `Non-empty UDT name '${name}' previously defined.`,
       });
       udtName = d.udtNames.get(name);
       if (udtName === -1) {
