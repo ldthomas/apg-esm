@@ -183,13 +183,21 @@ export default class SabnfParser {
     data.findLine = findLine;
     data.charsLength = chars.length;
     data.ruleCount = 0;
-    const result = this._parser.parse('file', chars, data);
-    if (!result.success) {
-      errors.push({
-        line: 0,
-        char: 0,
-        msg: 'syntax analysis of input grammar failed',
-      });
+    try {
+      const result = this._parser.parse('file', chars, data);
+      if (!result.success) {
+        errors.push({
+          line: 0,
+          char: 0,
+          msg: 'syntax analysis of input grammar failed',
+        });
+      }
+    } catch (e) {
+      if (e instanceof Error) {
+        errors.push({ line: 0, char: 0, msg: `syntax analysis exception: ${e.message}` });
+      } else {
+        errors.push({ line: 0, char: 0, msg: `syntax analysis exception: ${String(e)}` });
+      }
     }
   }
 
@@ -213,8 +221,17 @@ export default class SabnfParser {
       udts: [],
       rulesLineMap: [],
     };
-    this._ast.translate(data);
-    if (errors.length) {
+    try {
+      this._ast.translate(data);
+      if (errors.length) {
+        return null;
+      }
+    } catch (e) {
+      if (e instanceof Error) {
+        errors.push({ line: 0, char: 0, msg: `semantic analysis exception: ${e.message}` });
+      } else {
+        errors.push({ line: 0, char: 0, msg: `semantic analysis exception: ${String(e)}` });
+      }
       return null;
     }
     /* Remove unneeded operators. */
@@ -501,7 +518,7 @@ export default class SabnfParser {
             source += `    this.rules[${ruleIndex}].opcodes[${opIndex}] = { type: ${op.type}, min: ${op.min ?? 0}, max: ${op.max ?? 0}, gl: ${op.gl}, go: ${op.go} };// TRG\n`;
             break;
           default:
-            throw new Error('parser.js: ~143: unrecognized opcode');
+            throw new Error('generateSource: unrecognized opcode');
         }
       });
     });

@@ -488,10 +488,6 @@ const semUdtEmpty: AstCallback = (state, chars, phraseIndex, phraseLength, data)
         char: phraseIndex,
         msg: `Empty UDT name '${name}' previously defined.`,
       });
-      udtName = d.udtNames.get(name);
-      if (udtName === -1) {
-        throw new Error('semUdtEmpty: name look up error');
-      }
     } else {
       d.udts.push({
         name: udtName.name,
@@ -499,19 +495,19 @@ const semUdtEmpty: AstCallback = (state, chars, phraseIndex, phraseLength, data)
         index: udtName.index,
         empty: true,
       });
+      const no = d.findLine(d.lines, phraseIndex, d.charsLength);
+      const line = d.lines[no];
+      const gl = line.lineNo;
+      const go = phraseIndex - line.beginChar;
+      d.opcodes.push({
+        type: ids.UDT,
+        empty: true,
+        index: udtName.index,
+        children: [],
+        gl,
+        go,
+      });
     }
-    const no = d.findLine(d.lines, phraseIndex, d.charsLength);
-    const line = d.lines[no];
-    const gl = line.lineNo;
-    const go = phraseIndex - line.beginChar;
-    d.opcodes.push({
-      type: ids.UDT,
-      empty: true,
-      index: udtName.index,
-      children: [],
-      gl,
-      go,
-    });
   }
   return ret;
 };
@@ -528,10 +524,6 @@ const semUdtNonEmpty: AstCallback = (state, chars, phraseIndex, phraseLength, da
         char: phraseIndex,
         msg: `Non-empty UDT name '${name}' previously defined.`,
       });
-      udtName = d.udtNames.get(name);
-      if (udtName === -1) {
-        throw new Error('semUdtNonEmpty: name look up error');
-      }
     } else {
       d.udts.push({
         name: udtName.name,
@@ -539,21 +531,21 @@ const semUdtNonEmpty: AstCallback = (state, chars, phraseIndex, phraseLength, da
         index: udtName.index,
         empty: false,
       });
+      const no = d.findLine(d.lines, phraseIndex, d.charsLength);
+      const line = d.lines[no];
+      const gl = line.lineNo;
+      const go = phraseIndex - line.beginChar;
+      d.opcodes.push({
+        type: ids.UDT,
+        empty: false,
+        index: udtName.index,
+        children: [],
+        gl,
+        go,
+        syntax: null,
+        semantic: null,
+      });
     }
-    const no = d.findLine(d.lines, phraseIndex, d.charsLength);
-    const line = d.lines[no];
-    const gl = line.lineNo;
-    const go = phraseIndex - line.beginChar;
-    d.opcodes.push({
-      type: ids.UDT,
-      empty: false,
-      index: udtName.index,
-      children: [],
-      gl,
-      go,
-      syntax: null,
-      semantic: null,
-    });
   }
   return ret;
 };
