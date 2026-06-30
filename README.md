@@ -5,7 +5,7 @@
 `apg-esm` updates [apg-js](https://www.npmjs.com/package/apg-js) in a number of significant ways.
 
 - Uses the more modern ESM module system
-- Has been converted to stricly typed TypeScript
+- Has been converted to strictly typed TypeScript
 - Has been refactored for clarity and maintainability
 - Removes the `apg-exp` pattern-matching engine and its significant overhead
 - Simplifies the parse tree trace with simple text output, removing HTML file presentation
