@@ -4,7 +4,7 @@
  *   ********************************************************************************* */
 /**
  * @module types
- * @description Shared TypeScript interfaces for grammar objects, parser callback state,
+ * Shared TypeScript interfaces for grammar objects, parser callback state,
  * and parser helper integrations used across the APG parser runtime and consumer applications.
  */
 
@@ -61,6 +61,9 @@ export type AstCallback = (
   data: unknown,
 ) => number | undefined;
 
+/**
+ * Interface for {@link Trace} objects attachable to the parser.
+ */
 export interface TraceLike {
   traceObject?: string;
   init?(rules: GrammarRule[], udts: GrammarUdt[], chars: number[]): void;
@@ -68,6 +71,9 @@ export interface TraceLike {
   up?(op: GrammarOpcode, state: number, phraseIndex: number, phraseLength: number, lookAhead: number): void;
 }
 
+/**
+ * Interface for {@link TraceSabnf} objects attachable to the parser.
+ */
 export interface TraceSabnfLike {
   traceSabnfObject?: string;
   init?(sabnfLines: string[], chars: number[]): void;
@@ -75,6 +81,9 @@ export interface TraceSabnfLike {
   up?(op: GrammarOpcode, state: number, phraseIndex: number, phraseLength: number): void;
 }
 
+/**
+ * Interface for {@link Ast} objects attachable to the parser.
+ */
 export interface AstLike {
   astObject?: string;
   init?(chars: number[]): void;
@@ -86,6 +95,9 @@ export interface AstLike {
   setLength?(length: number | undefined): void;
 }
 
+/**
+ * Interface for {@link Stats} objects attachable to the parser.
+ */
 export interface StatsLike {
   statsObject?: string;
   init?(rules: GrammarRule[], udts: GrammarUdt[]): void;

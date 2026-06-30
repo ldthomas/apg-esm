@@ -4,7 +4,7 @@
  *   ********************************************************************************* */
 /**
  * @module rule-dependencies
- * @description Determines rule dependencies and types for grammar analysis.
+ * Determines rule dependencies and types for grammar analysis.
  * For each rule, identifies which rules it refers to, which rules refer back to it,
  * and classifies rules as non-recursive (N), recursive (R), or mutually-recursive (MR).
  */

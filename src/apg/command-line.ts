@@ -4,7 +4,7 @@
  *   ********************************************************************************* */
 /**
  * @module command-line
- * @description Parses APG command-line arguments into a configuration object.
+ * Parses APG command-line arguments into a configuration object.
  * Supports flags for help, version, strict mode, TypeScript output, rule display,
  * and input/output file paths.
  */
@@ -28,8 +28,7 @@ export interface Config {
 }
 
 /**
- * @function commandLine
- * @description Parses APG command-line arguments and returns a configuration object.
+ * Parses APG command-line arguments and returns a configuration object.
  * @param args - Command-line arguments (e.g. `process.argv.slice(2)`).
  * @returns Configuration object.
  */

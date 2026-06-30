@@ -132,8 +132,7 @@ function reduceOpcodes(rules: GrammarRuleWithOpcodes[]): void {
 }
 
 /**
- * @class SabnfParser
- * @description Internal parser used by the APG API to process SABNF grammar source.
+ * Internal parser used by the APG API to process SABNF grammar source.
  * Performs the syntax phase (parse tree construction) and the semantic phase (opcode generation),
  * then generates JavaScript grammar object source or an in-memory grammar object.
  */
@@ -161,12 +160,11 @@ export default class SabnfParser {
   /* Parse the grammar - the syntax phase. */
   /* SABNF grammar syntax errors are caught and reported here. */
   /**
-   * @method syntax
-   * @description Runs the syntax phase: parses the grammar character array and reports syntax errors.
-   * @param {number[]} chars - Array of integer character codes for the grammar source.
-   * @param {Object[]} lines - Line descriptor array from the scanner.
-   * @param {Object[]} errors - Array to which error objects are appended.
-   * @param {boolean} [strict] - If `true`, restrict to RFC 5234/7405 ABNF only.
+   * Runs the syntax phase: parses the grammar character array and reports syntax errors.
+   * @param chars - Array of integer character codes for the grammar source.
+   * @param lines - Line descriptor array from the scanner.
+   * @param errors - Array to which error objects are appended.
+   * @param strict - If `true`, restrict to RFC 5234/7405 ABNF only.
    */
   syntax(chars: number[], lines: LineInfo[], errors: SyntaxError[], strict?: boolean): void {
     const data: SyntaxData = {
@@ -204,12 +202,11 @@ export default class SabnfParser {
   /* Parse the grammar - the semantic phase, translates the AST. */
   /* SABNF grammar syntax errors are caught and reported here. */
   /**
-   * @method semantic
-   * @description Runs the semantic phase: translates the AST into rule and UDT opcode arrays.
-   * @param {number[]} chars - Array of integer character codes for the grammar source.
-   * @param {Object[]} lines - Line descriptor array from the scanner.
-   * @param {Object[]} errors - Array to which error objects are appended.
-   * @returns {{ rules: Object[], udts: Object[], lineMap: number[] }|null} Opcode data, or `null` on error.
+   * Runs the semantic phase: translates the AST into rule and UDT opcode arrays.
+   * @param chars - Array of integer character codes for the grammar source.
+   * @param lines - Line descriptor array from the scanner.
+   * @param errors - Array to which error objects are appended.
+   * @returns Opcode data, or `null` on error.
    */
   semantic(chars: number[], lines: LineInfo[], errors: SyntaxError[]): SemanticResult | null {
     const data: SemanticData = {
@@ -246,14 +243,13 @@ export default class SabnfParser {
     };
   }
   /**
-   * @method generateSource
-   * @description Generates the JavaScript source code string for a grammar object constructor.
+   * Generates the JavaScript source code string for a grammar object constructor.
    * The resulting string can be written to a `.js` file and imported as a grammar.
-   * @param {number[]} chars - Array of integer character codes for the grammar source.
-   * @param {Object[]} lines - Line descriptor array from the scanner.
-   * @param {Object[]} rules - Array of rule objects with opcode arrays.
-   * @param {Object[]} udts - Array of UDT objects.
-   * @returns {string} JavaScript source code for the grammar object constructor.
+   * @param chars - Array of integer character codes for the grammar source.
+   * @param lines - Line descriptor array from the scanner.
+   * @param rules - Array of rule objects with opcode arrays.
+   * @param udts - Array of UDT objects.
+   * @returns JavaScript source code for the grammar object constructor.
    */
   generateSource(
     chars: number[],
@@ -567,14 +563,13 @@ export default class SabnfParser {
   }
 
   /**
-   * @method generateObject
-   * @description Generates an in-memory grammar object equivalent to instantiating
+   * Generates an in-memory grammar object equivalent to instantiating
    * the constructor function returned by `generateSource()`.
    * Initializes all rule and UDT callbacks to `false`.
-   * @param {string} stringArg - The original grammar source string. Stored and returned by `toString()`.
-   * @param {Object[]} rules - Array of rule objects with opcode arrays, as produced by `semantic()`.
-   * @param {Object[]} udts - Array of UDT objects, as produced by `semantic()`.
-   * @returns {Object} Grammar object with `grammarObject`, `callbacks`, `rules`, `udts`, and `toString()`.
+   * @param stringArg - The original grammar source string. Stored and returned by `toString()`.
+   * @param rules - Array of rule objects with opcode arrays, as produced by `semantic()`.
+   * @param udts - Array of UDT objects, as produced by `semantic()`.
+   * @returns Grammar object with `grammarObject`, `callbacks`, `rules`, `udts`, and `toString()`.
    */
   generateObject(stringArg: string, rules: GrammarRuleWithOpcodes[], udts: GrammarUdt[]): GrammarObjectWithCallbacks {
     const obj: GrammarObjectWithCallbacks = {

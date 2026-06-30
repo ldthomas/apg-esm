@@ -1,6 +1,6 @@
 /**
  * @module stats
- * @description Provides statistics collection for the APG parser.
+ * Provides statistics collection for the APG parser.
  * Accumulates operator hit counts (MATCH, EMPTY, NOMATCH) and displays them after a parse.
  * Attach to a parser instance via {@link Parser#setStats}.
  */
@@ -84,8 +84,7 @@ function sortIndex(lhs: RuleStatEntry, rhs: RuleStatEntry): number {
 }
 
 /**
- * @class Stats
- * @description Collects and displays parser statistics. Tracks operator hit counts
+ * Collects and displays parser statistics. Tracks operator hit counts
  * per operator type and per rule/UDT name.
  */
 export default class Stats {
@@ -124,9 +123,8 @@ export default class Stats {
   }
 
   /**
-   * @method displayStats
-   * @description Returns a formatted table of hit counts for each operator type.
-   * @returns {string} Multi-line ASCII table string.
+   * Returns a formatted table of hit counts for each operator type.
+   * @returns Multi-line ASCII table string.
    */
   displayStats(): string {
     let out = '';
@@ -222,11 +220,10 @@ export default class Stats {
   Display rule/udt
   */
   /**
-   * @method displayHits
-   * @description Returns a formatted table of hit counts for each rule and UDT name.
-   * @param {string} [type] - Sort order: `'alpha'`/`'a'` for alphabetical, `'index'`/`'i'` for index order,
+   * Returns a formatted table of hit counts for each rule and UDT name.
+   * @param type - Sort order: `'alpha'`/`'a'` for alphabetical, `'index'`/`'i'` for index order,
    *   or any other value for descending hit-count order.
-   * @returns {string} Multi-line ASCII table string.
+   * @returns Multi-line ASCII table string.
    */
   displayHits(type?: string): string {
     let out = '';

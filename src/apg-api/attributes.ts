@@ -53,7 +53,7 @@
 // S and A are dependent on one another and are mutually recursive.
 /**
  * @module attributes
- * @description Validates grammar rule attributes (left recursion, cyclic, infinite, etc.)
+ * Validates grammar rule attributes (left recursion, cyclic, infinite, etc.)
  * and computes rule dependencies and mutually-recursive groups.
  *
  * Fatal attributes: **left recursion**, **cyclic**, **infinite**.
@@ -272,8 +272,7 @@ class State {
 }
 
 /**
- * @function attributes
- * @description Validates rule attributes and returns the number of attribute errors found.
+ * Validates rule attributes and returns the number of attribute errors found.
  * @param rules - Array of rule objects from the API translator.
  * @param udts - Array of UDT objects from the API translator.
  * @param lineMap - Array mapping rule indexes to grammar line numbers (reserved, currently unused).

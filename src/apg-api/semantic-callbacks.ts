@@ -4,7 +4,7 @@
  *   ********************************************************************************* */
 /**
  * @module semantic-callbacks
- * @description AST translation callback functions for the semantic analysis phase
+ * AST translation callback functions for the semantic analysis phase
  * of the SABNF grammar parser generator. Based on the grammar defined in `sabnf-grammar.bnf`.
  */
 import ids from '../apg-lib/identifiers.js';

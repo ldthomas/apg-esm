@@ -1,0 +1,8 @@
+{
+  "entryPoints": ["src/index.ts"],
+  "out": "documentation",
+  "tsconfig": "tsconfig.json",
+  "exclude": ["**/__tests__/**", "dist"],
+  "plugin": [],
+  "excludeInternal": true
+}

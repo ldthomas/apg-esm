@@ -4,7 +4,7 @@
  *   ********************************************************************************* */
 /**
  * @module scanner
- * @description Pre-analyzes an input SABNF grammar before parsing.
+ * Pre-analyzes an input SABNF grammar before parsing.
  * Verifies that all character codes are valid (no non-printing ASCII) and catalogs
  * each line with its position and length for use in error reporting.
  */
@@ -36,12 +36,11 @@ interface ScanData {
 }
 
 /**
- * @function scanner
- * @description Scans an SABNF grammar character array for invalid characters and catalogs its lines.
- * @param {number[]} chars - Array of integer character codes representing the SABNF grammar text.
- * @param {ScanError[]} errors - Array to which error objects `{ line, char, msg }` are appended.
- * @param {boolean} [strict] - If `true`, every line (including the last) must end with CRLF (`\r\n`).
- * @returns {LineDescriptor[]} Array of line descriptor objects with `lineNo`, `beginChar`, `length`,
+ * Scans an SABNF grammar character array for invalid characters and catalogs its lines.
+ * @param chars - Array of integer character codes representing the SABNF grammar text.
+ * @param errors - Array to which error objects `{ line, char, msg }` are appended.
+ * @param strict - If `true`, every line (including the last) must end with CRLF (`\r\n`).
+ * @returns Array of line descriptor objects with `lineNo`, `beginChar`, `length`,
  *   `textLength`, `endType`, and `invalidChars` properties.
  */
 export default function scanner(chars: number[], errors: ScanError[], strict?: boolean): LineDescriptor[] {

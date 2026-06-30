@@ -1,6 +1,6 @@
 /**
  * @module traceSabnf
- * @description Provides SABNF grammar-annotated trace output for the APG parser.
+ * Provides SABNF grammar-annotated trace output for the APG parser.
  * Records operator entries and exits annotated with their position in the grammar source text.
  * Attach to a parser instance via {@link Parser#setTraceSabnf}.
  */
@@ -56,8 +56,7 @@ function opToString(op: GrammarOpcode): string {
   }
 }
 /**
- * @class TraceSabnf
- * @description Records and displays a trace of every operator visited during a parse,
+ * Records and displays a trace of every operator visited during a parse,
  * annotated with the corresponding position in the SABNF grammar source text.
  */
 export default class TraceSabnf {
@@ -98,9 +97,8 @@ export default class TraceSabnf {
   }
 
   /**
-   * @method display
-   * @description Returns the annotated grammar trace as a formatted string.
-   * @returns {string} Grammar trace followed by the full grammar text.
+   * Returns the annotated grammar trace as a formatted string.
+   * @returns Grammar trace followed by the full grammar text.
    */
   display(): string {
     let out = 'GRAMMAR TRACE\n';

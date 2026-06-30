@@ -4,7 +4,7 @@
  *   ********************************************************************************* */
 /**
  * @module identifiers
- * @description Shared named integer identifiers used across the APG parser generator and
+ * Shared named integer identifiers used across the APG parser generator and
  * generated parsers. Defines ABNF/SABNF operator type codes, parser states, AST traversal
  * directions, and rule attribute categories.
  */

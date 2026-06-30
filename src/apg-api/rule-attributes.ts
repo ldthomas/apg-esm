@@ -4,7 +4,7 @@
  *   ********************************************************************************* */
 /**
  * @module rule-attributes
- * @description Performs the heavy lifting for grammar rule attribute generation.
+ * Performs the heavy lifting for grammar rule attribute generation.
  * Determines left recursion, cyclic, infinite, nested, right recursion, and
  * empty-string attributes for each grammar rule.
  */

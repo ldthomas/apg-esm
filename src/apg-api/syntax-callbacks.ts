@@ -4,7 +4,7 @@
  *   ********************************************************************************* */
 /**
  * @module syntax-callbacks
- * @description Callback functions for the syntax analysis phase of the SABNF grammar
+ * Callback functions for the syntax analysis phase of the SABNF grammar
  * parser generator. Based on the grammar defined in `sabnf-grammar.bnf`.
  */
 import ids from '../apg-lib/identifiers.js';

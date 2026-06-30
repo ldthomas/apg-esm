@@ -4,7 +4,7 @@
  *   ********************************************************************************* */
 /**
  * @module ast
- * @description Provides the Abstract Syntax Tree (AST) builder and translator for the APG parser.
+ * Provides the Abstract Syntax Tree (AST) builder and translator for the APG parser.
  * The AST is a user-controlled subset of the full parse tree. Each node stores the matched phrase
  * for a named rule (`RNM`) or user-defined terminal (`UDT`).
  * Attach to a parser instance via {@link Parser#setAst}.
@@ -38,8 +38,7 @@ function indent(n: number): string {
 }
 
 /**
- * @class Ast
- * @description Builds and translates an Abstract Syntax Tree (AST) as a subset of the parse tree.
+ * Builds and translates an Abstract Syntax Tree (AST) as a subset of the parse tree.
  * The user registers rule/UDT names to retain and optionally associates semantic callback
  * functions with them. After parsing, call {@link Ast#translate} to apply the callbacks.
  */
@@ -71,11 +70,10 @@ export default class Ast {
   }
 
   /**
-   * @method setCallback
-   * @description Registers a semantic callback function for a named rule or UDT.
+   * Registers a semantic callback function for a named rule or UDT.
    * Pass `true` instead of a function to capture the node without a callback.
-   * @param {string} name - The rule or UDT name (case-insensitive).
-   * @param {Function|true} fn - Callback function, or `true` to enable capture without a callback.
+   * @param name - The rule or UDT name (case-insensitive).
+   * @param fn - Callback function, or `true` to enable capture without a callback.
    */
   setCallback(name: string, fn: AstCallback | true): void {
     if (typeof name !== 'string' || (fn !== true && typeof fn !== 'function')) {
@@ -147,10 +145,9 @@ export default class Ast {
   }
 
   /**
-   * @method translate
-   * @description Traverses all recorded AST nodes and invokes the registered callback
+   * Traverses all recorded AST nodes and invokes the registered callback
    * functions to apply semantic actions to the matched phrases.
-   * @param {*} [data] - Optional user-defined data passed through to every callback function.
+   * @param data - Optional user-defined data passed through to every callback function.
    */
   translate(data: unknown): void {
     let ret: number | undefined;
@@ -189,11 +186,10 @@ export default class Ast {
   }
 
   /**
-   * @method toXml
-   * @description Generates an XML representation of the AST.
-   * @param {string} [mode] - Display mode for captured phrases:
+   * Generates an XML representation of the AST.
+   * @param modeArg - Display mode for captured phrases:
    *   `'ascii'` (default), `'decimal'`, `'hexadecimal'`, or `'unicode'`.
-   * @returns {string} Well-formed XML string representing the AST.
+   * @returns Well-formed XML string representing the AST.
    */
   toXml(modeArg?: string): string {
     let display: (chars: number[], beg?: number, len?: number) => string = charsToDec;

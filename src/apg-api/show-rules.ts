@@ -4,20 +4,19 @@
  *   ********************************************************************************* */
 /**
  * @module show-rules
- * @description Formats and returns a list of all rule and UDT names defined in a grammar.
+ * Formats and returns a list of all rule and UDT names defined in a grammar.
  */
 import type { GrammarRule, GrammarUdt } from '../apg-lib/types.js';
 
 const THIS_FILE = 'show-rules.js';
 
 /**
- * @function showRules
- * @description Returns a formatted list of all rule and UDT names defined in the grammar.
- * @param {GrammarRule[]} [rulesIn=[]] - Array of rule objects produced by the API translator.
- * @param {GrammarUdt[]} [udtsIn=[]] - Array of UDT objects produced by the API translator.
- * @param {string} [order='index'] - Sort order: `'index'`/`'i'` for definition order,
+ * Returns a formatted list of all rule and UDT names defined in the grammar.
+ * @param rulesIn - Array of rule objects produced by the API translator.
+ * @param udtsIn - Array of UDT objects produced by the API translator.
+ * @param order - Sort order: `'index'`/`'i'` for definition order,
  *   `'alpha'`/`'a'` for alphabetical order.
- * @returns {string} Formatted multi-line string listing all rule and UDT names.
+ * @returns Formatted multi-line string listing all rule and UDT names.
  */
 function showRules(rulesIn: GrammarRule[] = [], udtsIn: GrammarUdt[] = [], order: string = 'index'): string {
   const thisFuncName = 'showRules';

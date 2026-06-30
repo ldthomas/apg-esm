@@ -1,6 +1,6 @@
 /**
  * @module trace
- * @description Provides parse tree node tracing for the APG parser.
+ * Provides parse tree node tracing for the APG parser.
  * Records operator entries and exits as the parser traverses the parse tree.
  * Attach to a parser instance via {@link Parser#setTrace}.
  */
@@ -81,8 +81,7 @@ function opName(op: GrammarOpcode, rules: GrammarRule[], udts: GrammarUdt[]): st
 }
 
 /**
- * @class Trace
- * @description Records and displays a textual trace of every operator node
+ * Records and displays a textual trace of every operator node
  * visited during a parse. Useful for debugging grammars and parsers.
  */
 export default class Trace {
@@ -153,9 +152,8 @@ export default class Trace {
   }
 
   /**
-   * @method display
-   * @description Returns the full trace as a formatted string.
-   * @returns {string} The input string followed by the parse tree node trace.
+   * Returns the full trace as a formatted string.
+   * @returns The input string followed by the parse tree node trace.
    */
   display(): string {
     let out = 'INPUT STRING\n';

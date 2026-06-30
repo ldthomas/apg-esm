@@ -4,7 +4,7 @@
  *   ********************************************************************************* */
 /**
  * @module apg
- * @description Driver function for the APG command-line parser generator.
+ * Driver function for the APG command-line parser generator.
  * Reads the command-line configuration, scans and parses the input SABNF grammar,
  * validates attributes, and writes the generated grammar object to the output file.
  */
@@ -22,8 +22,7 @@ function logErrors(api: ApiCtor, header: string): void {
 }
 
 /**
- * @function apg
- * @description Runs the APG parser generator pipeline for the given command-line arguments.
+ * Runs the APG parser generator pipeline for the given command-line arguments.
  * @param args - Command-line arguments (typically `process.argv.slice(2)`).
  */
 export default function apg(args: string[]): void {

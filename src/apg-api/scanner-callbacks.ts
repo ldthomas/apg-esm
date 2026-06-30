@@ -4,7 +4,7 @@
  *   ********************************************************************************* */
 /**
  * @module scanner-callbacks
- * @description AST translation callback functions used by the scanner
+ * AST translation callback functions used by the scanner
  * to analyze grammar characters and catalog line positions.
  */
 import ids from '../apg-lib/identifiers.js';

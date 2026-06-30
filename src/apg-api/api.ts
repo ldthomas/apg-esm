@@ -4,7 +4,7 @@
  *   ********************************************************************************* */
 /**
  * @module api
- * @description The Application Programming Interface (API) for APG — the ABNF Parser Generator.
+ * The Application Programming Interface (API) for APG — the ABNF Parser Generator.
  * Accepts an SABNF grammar source (string, Buffer, or character-code array) and exposes
  * a sequential workflow: `scan` → `parse` → `translate` → `attributes` → `toSource`/`toObject`.
  */
@@ -17,13 +17,19 @@ import type { GrammarObject, GrammarOpcode, GrammarRule, GrammarUdt } from '../a
 const THIS_FILE = 'api.js: ';
 const CHUNK = 0x8000;
 
-interface LineInfo {
+/**
+ * Descriptor for a single line in the SABNF grammar source.
+ */
+export interface LineInfo {
   beginChar: number;
   length: number;
   lineNo: number;
 }
 
-interface GrammarError {
+/**
+ * Grammar error object with line, character position, and error message.
+ */
+export interface GrammarError {
   line: number;
   char: number;
   msg: string;
@@ -35,11 +41,17 @@ interface SemanticResult {
   lineMap: number[];
 }
 
-interface RuleWithOpcodes extends GrammarRule {
+/**
+ * Grammar rule with associated opcode array.
+ */
+export interface RuleWithOpcodes extends GrammarRule {
   opcodes: GrammarOpcode[];
 }
 
-interface GrammarObjectWithCallbacks extends GrammarObject {
+/**
+ * Grammar object with callback registry.
+ */
+export interface GrammarObjectWithCallbacks extends GrammarObject {
   callbacks: Record<string, boolean>;
 }
 
@@ -135,8 +147,7 @@ function charsToString(chars: number[]): string {
 }
 
 /**
- * @class Api
- * @description The main APG API class. Accepts an SABNF grammar source and provides methods
+ * The main APG API class. Accepts an SABNF grammar source and provides methods
  * to scan, parse, translate, validate attributes, and generate a grammar object or its source code.
  */
 export default class Api {
@@ -175,10 +186,9 @@ export default class Api {
     this.sabnf = charsToString(this.chars);
   }
   /**
-   * @method scan
-   * @description Scans the input grammar for invalid characters and catalogs line positions.
+   * Scans the input grammar for invalid characters and catalogs line positions.
    * Must be called before `parse()`.
-   * @param {boolean} [strict] - If `true`, all lines must end with CRLF (`\r\n`).
+   * @param strict - If `true`, all lines must end with CRLF (`\r\n`).
    */
   scan(strict?: boolean): void {
     this.lines = scanner(this.chars, this.errors, strict);
@@ -186,9 +196,8 @@ export default class Api {
   }
 
   /**
-   * @method parse
-   * @description Parses the grammar for correct SABNF syntax. Must be called after `scan()`.
-   * @param {boolean} [strict] - If `true`, restricts to RFC 5234/7405 ABNF only.
+   * Parses the grammar for correct SABNF syntax. Must be called after `scan()`.
+   * @param strict - If `true`, restricts to RFC 5234/7405 ABNF only.
    */
   parse(strict?: boolean): void {
     if (!this._isScanned) {
@@ -199,8 +208,7 @@ export default class Api {
   }
 
   /**
-   * @method translate
-   * @description Translates the grammar syntax tree into rule and UDT opcode arrays.
+   * Translates the grammar syntax tree into rule and UDT opcode arrays.
    * Must be called after `parse()`. On success, populates `this.rules` and `this.udts`.
    */
   translate(): void {
@@ -217,10 +225,9 @@ export default class Api {
   }
 
   /**
-   * @method attributes
-   * @description Computes rule attributes (left recursion, cyclic, infinite, etc.).
+   * Computes rule attributes (left recursion, cyclic, infinite, etc.).
    * Must be called after `translate()`.
-   * @returns {number} Number of fatal attribute errors found.
+   * @returns Number of fatal attribute errors found.
    */
   attributes(): number {
     if (!this._isTranslated) {
@@ -232,10 +239,9 @@ export default class Api {
   }
 
   /**
-   * @method generate
-   * @description Convenience method that runs the full pipeline (scan → parse → translate → attributes)
+   * Convenience method that runs the full pipeline (scan → parse → translate → attributes)
    * in a single call. Halts early and leaves errors in `this.errors` if any step fails.
-   * @param {boolean} [strict] - If `true`, restricts to RFC 5234/7405 ABNF only.
+   * @param strict - If `true`, restricts to RFC 5234/7405 ABNF only.
    */
   generate(strict?: boolean): void {
     this.lines = scanner(this.chars, this.errors, strict);
@@ -258,10 +264,9 @@ export default class Api {
   }
 
   /**
-   * @method displayRules
-   * @description Returns a formatted list of all rule and UDT names. Requires `translate()` first.
-   * @param {string} [order='index'] - `'index'`/`'i'` for definition order, `'alpha'`/`'a'` for alphabetical.
-   * @returns {string} Formatted multi-line string.
+   * Returns a formatted list of all rule and UDT names. Requires `translate()` first.
+   * @param order - `'index'`/`'i'` for definition order, `'alpha'`/`'a'` for alphabetical.
+   * @returns Formatted multi-line string.
    */
   displayRules(order: string = 'index'): string {
     if (!this._isTranslated) {
@@ -271,10 +276,9 @@ export default class Api {
   }
 
   /**
-   * @method displayRuleDependencies
-   * @description Returns a formatted display of rule dependencies. Requires `attributes()` first.
-   * @param {string} [order='index'] - `'index'`/`'i'`, `'alpha'`/`'a'`, or `'type'`/`'t'`.
-   * @returns {string} Formatted multi-line string.
+   * Returns a formatted display of rule dependencies. Requires `attributes()` first.
+   * @param order - `'index'`/`'i'`, `'alpha'`/`'a'`, or `'type'`/`'t'`.
+   * @returns Formatted multi-line string.
    */
   displayRuleDependencies(order: string = 'index'): string {
     if (!this._haveAttributes) {
@@ -284,10 +288,9 @@ export default class Api {
   }
 
   /**
-   * @method displayAttributes
-   * @description Returns a formatted display of rule attributes. Requires `attributes()` first.
-   * @param {string} [order='index'] - `'index'`/`'i'`, `'alpha'`/`'a'`, or `'type'`/`'t'`.
-   * @returns {string} Formatted multi-line string.
+   * Returns a formatted display of rule attributes. Requires `attributes()` first.
+   * @param order - `'index'`/`'i'`, `'alpha'`/`'a'`, or `'type'`/`'t'`.
+   * @returns Formatted multi-line string.
    */
   displayAttributes(order: string = 'index'): string {
     if (!this._haveAttributes) {
@@ -300,10 +303,9 @@ export default class Api {
   }
 
   /**
-   * @method displayAttributeErrors
-   * @description Returns a formatted display of only the erroneous rule attributes.
+   * Returns a formatted display of only the erroneous rule attributes.
    * Requires `attributes()` first.
-   * @returns {string} Formatted multi-line string listing only rules with fatal attribute errors.
+   * @returns Formatted multi-line string listing only rules with fatal attribute errors.
    */
   displayAttributeErrors(): string {
     if (!this._haveAttributes) {
@@ -313,10 +315,9 @@ export default class Api {
   }
 
   /**
-   * @method toSource
-   * @description Returns the grammar object as a JavaScript source code string.
+   * Returns the grammar object as a JavaScript source code string.
    * Requires a successful `attributes()` call with zero errors.
-   * @returns {string} JavaScript source code for the grammar constructor function.
+   * @returns JavaScript source code for the grammar constructor function.
    */
   toSource(typescript?: boolean): string {
     const useTypeScript = !!typescript;
@@ -330,10 +331,9 @@ export default class Api {
   }
 
   /**
-   * @method toObject
-   * @description Returns an in-memory grammar object ready for use with `apg-lib`.
+   * Returns an in-memory grammar object ready for use with `apg-lib`.
    * Requires a successful `attributes()` call with zero errors.
-   * @returns {Object} Grammar object with `rules`, `udts`, and `toString()` method.
+   * @returns Grammar object with `rules`, `udts`, and `toString()` method.
    */
   toObject(): GrammarObjectWithCallbacks {
     if (!this._haveAttributes) {
@@ -346,18 +346,16 @@ export default class Api {
   }
 
   /**
-   * @method errorsToAscii
-   * @description Returns all collected errors as a human-readable ASCII string.
-   * @returns {string} Formatted error listing.
+   * Returns all collected errors as a human-readable ASCII string.
+   * @returns Formatted error listing.
    */
   errorsToAscii(): string {
     return errorsToAscii(this.errors, this.lines ?? [], this.chars);
   }
 
   /**
-   * @method linesToAscii
-   * @description Returns an annotated listing of the SABNF grammar source lines.
-   * @returns {string} Formatted annotated grammar listing.
+   * Returns an annotated listing of the SABNF grammar source lines.
+   * @returns Formatted annotated grammar listing.
    */
   linesToAscii(): string {
     return linesToAscii(this.lines ?? [], this.chars);

@@ -4,7 +4,7 @@
  *   ********************************************************************************* */
 /**
  * @module utilities
- * @description Utility functions shared by `apg-lib`, the parser generator, and generated parsers.
+ * Utility functions shared by `apg-lib`, the parser generator, and generated parsers.
  * Provides conversions between character-code arrays and strings, opcode/state name lookup,
  * and a variety of display format helpers.
  */
@@ -51,13 +51,12 @@ function getBounds(length: number, begArg: number | undefined, len: number | und
   };
 }
 /**
- * @function charsToString
- * @description Translates a sub-array of integer character codes into a JavaScript string.
+ * Translates a sub-array of integer character codes into a JavaScript string.
  * Very useful in callback functions to translate matched phrases.
- * @param {number[]} chars - The full array of integer character codes.
- * @param {number} [phraseIndex] - Start index into `chars`. Defaults to `0`.
- * @param {number} [phraseLength] - Number of characters to translate. Defaults to end of array.
- * @returns {string} The resulting string, or `''` if the range is empty.
+ * @param chars - The full array of integer character codes.
+ * @param phraseIndex - Start index into `chars`. Defaults to `0`.
+ * @param phraseLength - Number of characters to translate. Defaults to end of array.
+ * @returns The resulting string, or `''` if the range is empty.
  */
 export function charsToString(chars: number[], phraseIndex?: number, phraseLength?: number): string {
   let beg = 0;
@@ -90,19 +89,17 @@ export function charsToString(chars: number[], phraseIndex?: number, phraseLengt
   return '';
 }
 /**
- * @function stringToChars
- * @description Translates a JavaScript string into an array of integer Unicode code points.
- * @param {string} string - The input string.
- * @returns {number[]} Array of integer Unicode code-point values.
+ * Translates a JavaScript string into an array of integer Unicode code points.
+ * @param string - The input string.
+ * @returns Array of integer Unicode code-point values.
  */
 export function stringToChars(string: string): number[] {
   return Array.from(string).map((ch) => ch.codePointAt(0) ?? 0);
 }
 /**
- * @function opcodeToString
- * @description Translates an opcode type identifier into a human-readable string.
- * @param {number} type - An opcode type constant from {@link module:identifiers}.
- * @returns {string} The opcode name (e.g. `'ALT'`, `'CAT'`, `'RNM'`, etc.).
+ * Translates an opcode type identifier into a human-readable string.
+ * @param type - An opcode type constant (e.g., `id.ALT`, `id.CAT`, `id.RNM`, etc.).
+ * @returns The opcode name (e.g. `'ALT'`, `'CAT'`, `'RNM'`, etc.).
  */
 export function opcodeToString(type: number): string {
   let ret = 'unknown';
@@ -143,10 +140,9 @@ export function opcodeToString(type: number): string {
   return ret;
 }
 /**
- * @function stateToString
- * @description Translates a parser state identifier into a human-readable string.
- * @param {number} state - A state constant from {@link module:identifiers} (`ACTIVE`, `MATCH`, `EMPTY`, or `NOMATCH`).
- * @returns {string} The state name.
+ * Translates a parser state identifier into a human-readable string.
+ * @param state - A state constant (`ACTIVE`, `MATCH`, `EMPTY`, or `NOMATCH`).
+ * @returns The state name.
  */
 export function stateToString(state: number): string {
   let ret = 'unknown';
@@ -169,8 +165,7 @@ export function stateToString(state: number): string {
   return ret;
 }
 /**
- * @constant {string[]} asciiChars
- * @description Array of 128 HTML-safe display strings for the 7-bit ASCII character codes (indices 0–127).
+ * Array of 128 HTML-safe display strings for the 7-bit ASCII character codes (indices 0–127).
  * Control characters are represented by their abbreviation (e.g. `'NUL'`, `'LF'`);
  * printable characters are their literal HTML-escaped form.
  */
@@ -305,11 +300,10 @@ export const asciiChars: string[] = [
   'DEL',
 ];
 /**
- * @function charToHex
- * @description Translates a single character code to an uppercase hexadecimal string
+ * Translates a single character code to an uppercase hexadecimal string
  * with leading zeros to produce a 2-, 4-, or 8-digit representation.
- * @param {number} char - Integer character code.
- * @returns {string} Uppercase hex string.
+ * @param char - Integer character code.
+ * @returns Uppercase hex string.
  */
 export function charToHex(char: number): string {
   let ch = char.toString(16).toUpperCase();
@@ -334,12 +328,11 @@ export function charToHex(char: number): string {
   return ch;
 }
 /**
- * @function charsToDec
- * @description Translates a sub-array of character codes to a comma-separated decimal string.
- * @param {number[]} chars - Array of integer character codes.
- * @param {number} [beg] - Start index. Defaults to `0`.
- * @param {number} [len] - Number of characters. Defaults to end of array.
- * @returns {string} Comma-separated decimal string, e.g. `'65,66,67'`.
+ * Translates a sub-array of character codes to a comma-separated decimal string.
+ * @param chars - Array of integer character codes.
+ * @param beg - Start index. Defaults to `0`.
+ * @param len - Number of characters. Defaults to end of array.
+ * @returns Comma-separated decimal string, e.g. `'65,66,67'`.
  */
 export function charsToDec(chars: number[], beg?: number, len?: number): string {
   let ret = '';
@@ -356,12 +349,11 @@ export function charsToDec(chars: number[], beg?: number, len?: number): string 
   return ret;
 }
 /**
- * @function charsToHex
- * @description Translates a sub-array of character codes to a comma-separated hexadecimal string.
- * @param {number[]} chars - Array of integer character codes.
- * @param {number} [beg] - Start index. Defaults to `0`.
- * @param {number} [len] - Number of characters. Defaults to end of array.
- * @returns {string} Comma-separated hex string, e.g. `'\\x41,\\x42,\\x43'`.
+ * Translates a sub-array of character codes to a comma-separated hexadecimal string.
+ * @param chars - Array of integer character codes.
+ * @param beg - Start index. Defaults to `0`.
+ * @param len - Number of characters. Defaults to end of array.
+ * @returns Comma-separated hex string, e.g. `'\\x41,\\x42,\\x43'`.
  */
 export function charsToHex(chars: number[], beg?: number, len?: number): string {
   let ret = '';
@@ -401,12 +393,11 @@ function isUnicode(char: number): boolean {
   return true;
 }
 /**
- * @function charsToUnicode
- * @description Translates a sub-array of character codes to HTML Unicode numeric character references.
- * @param {number[]} chars - Array of integer character codes.
- * @param {number} [beg] - Start index. Defaults to `0`.
- * @param {number} [len] - Number of characters. Defaults to end of array.
- * @returns {string} HTML character reference string, e.g. `'&#65;&#66;'`.
+ * Translates a sub-array of character codes to HTML Unicode numeric character references.
+ * @param chars - Array of integer character codes.
+ * @param beg - Start index. Defaults to `0`.
+ * @param len - Number of characters. Defaults to end of array.
+ * @returns HTML character reference string, e.g. `'&#65;&#66;'`.
  */
 export function charsToUnicode(chars: number[], beg?: number, len?: number): string {
   let ret = '';
@@ -426,12 +417,11 @@ export function charsToUnicode(chars: number[], beg?: number, len?: number): str
   return ret;
 }
 /**
- * @function charsToJsUnicode
- * @description Translates a sub-array of character codes to JavaScript `\uXXXX` Unicode escape sequences.
- * @param {number[]} chars - Array of integer character codes.
- * @param {number} [beg] - Start index. Defaults to `0`.
- * @param {number} [len] - Number of characters. Defaults to end of array.
- * @returns {string} Comma-separated `\uXXXX` escape string.
+ * Translates a sub-array of character codes to JavaScript `\uXXXX` Unicode escape sequences.
+ * @param chars - Array of integer character codes.
+ * @param beg - Start index. Defaults to `0`.
+ * @param len - Number of characters. Defaults to end of array.
+ * @returns Comma-separated `\uXXXX` escape string.
  */
 export function charsToJsUnicode(chars: number[], beg?: number, len?: number): string {
   let ret = '';

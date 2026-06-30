@@ -4,7 +4,7 @@
  *   ********************************************************************************* */
 /**
  * @module parser
- * @description The core APG parser. Walks the opcode parse tree generated from an SABNF grammar
+ * The core APG parser. Walks the opcode parse tree generated from an SABNF grammar
  * and matches phrases from the input string. Contains the implementation of all SABNF operators.
  * Attach optional helpers (AST, Stats, Trace) before calling {@link Parser#parse}.
  */
@@ -97,8 +97,7 @@ function validateUdtCallbackResult(udt: GrammarUdt, sysData: SysData, charsLeft:
 }
 
 /**
- * @class Parser
- * @description The core APG parser. Instantiate with a grammar object (produced by the APG generator)
+ * The core APG parser. Instantiate with a grammar object (produced by the APG generator)
  * then call {@link Parser#parse} to match an input string against the grammar.
  */
 export default class Parser {
@@ -216,18 +215,16 @@ export default class Parser {
   }
 
   /**
-   * @method clearCallbacks
-   * @description Resets all rule and UDT callback functions to `null`.
+   * Resets all rule and UDT callback functions to `null`.
    */
   clearCallbacks(): void {
     this._ruleCallbacks = Array(this._rules.length).fill(null);
     this._udtCallbacks = Array(this._udts.length).fill(null);
   }
   /**
-   * @method setCallback
-   * @description Registers a callback function for a named rule or UDT.
-   * @param {string} name - The rule or UDT name (case-insensitive).
-   * @param {Function} fn - The callback function invoked when the parser visits that node.
+   * Registers a callback function for a named rule or UDT.
+   * @param name - The rule or UDT name (case-insensitive).
+   * @param fn - The callback function invoked when the parser visits that node.
    */
   setCallback(name: string, fn: ParserCallback): void {
     if (typeof name !== 'string' || typeof fn !== 'function') {
@@ -248,10 +245,9 @@ export default class Parser {
   }
 
   /**
-   * @method setTrace
-   * @description Attaches a {@link Trace} object to record parse tree traversal.
+   * Attaches a {@link Trace} object to record parse tree traversal.
    * Pass `null` to detach.
-   * @param {Trace|null} trace - A `Trace` instance or `null`.
+   * @param trace - A `Trace` instance or `null`.
    */
   setTrace(trace: TraceLike | null): void {
     if (!trace) {
@@ -263,10 +259,9 @@ export default class Parser {
     }
   }
   /**
-   * @method setTraceSabnf
-   * @description Attaches a {@link TraceSabnf} object to record grammar-annotated parse trace.
+   * Attaches a {@link TraceSabnf} object to record grammar-annotated parse trace.
    * Pass `null` to detach.
-   * @param {TraceSabnf|null} trace - A `TraceSabnf` instance or `null`.
+   * @param trace - A `TraceSabnf` instance or `null`.
    */
   setTraceSabnf(trace: TraceSabnfLike | null): void {
     if (!trace) {
@@ -278,10 +273,9 @@ export default class Parser {
     }
   }
   /**
-   * @method setAst
-   * @description Attaches an {@link Ast} object to build an Abstract Syntax Tree during parsing.
+   * Attaches an {@link Ast} object to build an Abstract Syntax Tree during parsing.
    * Pass `null` to detach.
-   * @param {Ast|null} ast - An `Ast` instance or `null`.
+   * @param ast - An `Ast` instance or `null`.
    */
   setAst(ast: AstLike | null): void {
     if (!ast) {
@@ -294,10 +288,9 @@ export default class Parser {
   }
 
   /**
-   * @method setStats
-   * @description Attaches a {@link Stats} object to collect operator statistics during parsing.
+   * Attaches a {@link Stats} object to collect operator statistics during parsing.
    * Pass `null` to detach.
-   * @param {Stats|null} stats - A `Stats` instance or `null`.
+   * @param stats - A `Stats` instance or `null`.
    */
   setStats(stats: StatsLike | null): void {
     if (!stats) {
@@ -310,9 +303,8 @@ export default class Parser {
   }
 
   /**
-   * @method setMaxTreeDepth
-   * @description Sets the maximum parse tree depth allowed. Throws if the limit is exceeded during parsing.
-   * @param {number} depth - Maximum depth (integer > 0). Default is `Infinity`.
+   * Sets the maximum parse tree depth allowed. Throws if the limit is exceeded during parsing.
+   * @param depth - Maximum depth (integer > 0). Default is `Infinity`.
    */
   setMaxTreeDepth(depth: number): void {
     this._limitTreeDepth = Math.floor(depth);
@@ -322,10 +314,9 @@ export default class Parser {
   }
 
   /**
-   * @method setMaxNodeHits
-   * @description Sets the maximum number of opcode executions (node hits) allowed per parse.
+   * Sets the maximum number of opcode executions (node hits) allowed per parse.
    * Throws if the limit is exceeded during parsing.
-   * @param {number} hits - Maximum node hits (integer > 0). Default is `Infinity`.
+   * @param hits - Maximum node hits (integer > 0). Default is `Infinity`.
    */
   setMaxNodeHits(hits: number): void {
     this._limitNodeHits = Math.floor(hits);
@@ -335,13 +326,11 @@ export default class Parser {
   }
 
   /**
-   * @method parse
-   * @description Parses an input string against the grammar starting at the specified rule.
-   * @param {string|number} startRule - The start rule name (string) or index (number).
-   * @param {string|number[]|Uint8Array|Uint16Array|Uint32Array} inputChars - The input to parse.
-   * @param {*} [callbackData] - Optional user data passed through to all callback functions.
-   * @returns {{ success: boolean, state: number, length: number, matched: number,
-   *   maxMatched: number, maxTreeDepth: number, nodeHits: number }} Parse result object.
+   * Parses an input string against the grammar starting at the specified rule.
+   * @param startRule - The start rule name (string) or index (number).
+   * @param inputChars - The input to parse.
+   * @param callbackData - Optional user data passed through to all callback functions.
+   * @returns Parse result object.
    */
   parse(
     startRule: string | number,

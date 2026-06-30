@@ -110,6 +110,6 @@ available in the `Trace Grammar Text` tab. Opening this tab will display the tra
 
 ## Code Documentation
 
-The documentation is in code comments in [JSDoc](https://jsdoc.app/) format.
+The documentation is in code comments in [TypeDoc](https://typedoc.org/) format.
 
-`npm run jsdoc` will generate the documentation at `./documentation/index.html`.
+`npm run docs` will generate the documentation at `./documentation/index.html`.

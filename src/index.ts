@@ -13,24 +13,37 @@ import ids from './apg-lib/identifiers.js';
 import * as utils from './apg-lib/utilities.js';
 import type {
   AstCallback,
+  AstLike,
   GrammarObject,
   GrammarOpcode,
   GrammarRule,
   GrammarUdt,
   ParseResult,
   ParserCallback,
+  StatsLike,
   SysData,
+  TraceLike,
+  TraceSabnfLike,
 } from './apg-lib/types.js';
+import type { GrammarError, GrammarObjectWithCallbacks, LineInfo, RuleWithOpcodes } from './apg-api/api.js';
 
 export type {
   AstCallback,
+  AstLike,
+  GrammarError,
   GrammarObject,
+  GrammarObjectWithCallbacks,
   GrammarOpcode,
   GrammarRule,
   GrammarUdt,
+  LineInfo,
   ParseResult,
   ParserCallback,
+  RuleWithOpcodes,
+  StatsLike,
   SysData,
+  TraceLike,
+  TraceSabnfLike,
 };
 export { apg, Api, Parser, Ast, Stats, Trace, TraceSabnf, ids, utils };
 export default { apg, Api, Parser, Ast, Stats, Trace, TraceSabnf, ids, utils };
