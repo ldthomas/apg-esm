@@ -67,6 +67,8 @@ export default class Ast {
   /* called by the parser to initialize the AST with the input characters */
   init(chars: number[]): void {
     this._chars = chars;
+    this._stack = [];
+    this._records = [];
   }
 
   /**
