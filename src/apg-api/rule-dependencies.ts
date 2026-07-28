@@ -226,7 +226,7 @@ function show(type: number | null = null): string {
         count += 1;
       }
       if (str.length - startSeg > lineLength && j !== maxRule) {
-        str += `\n${pre}${toArrow}`;
+        str += `\n${pre}${byArrow}`;
         startSeg = str.length;
       }
     }
