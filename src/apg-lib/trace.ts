@@ -121,7 +121,10 @@ export default class Trace {
   up(op: GrammarOpcode, state: number, offset: number, phraseLength: number, lookAhead: number): void {
     const thisFunc = `${THIS_FILE}trace.up: `;
     this._treeDepth -= 1;
-    const lead = lookAhead > 0 ? lookAheadIndent(this._treeDepth) : indent(this._treeDepth);
+    const lead =
+      lookAhead > 0 || op.type === id.AND || op.type === id.NOT
+        ? lookAheadIndent(this._treeDepth)
+        : indent(this._treeDepth);
     let len: number;
     let phrase: string;
     let st: string;

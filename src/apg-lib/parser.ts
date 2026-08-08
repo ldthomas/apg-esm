@@ -588,9 +588,7 @@ export default class Parser {
   // if it succeeds and NOMATCH if it fails.
   // *Always* backtracks on any matched phrase and returns EMPTY on success.
   _opAND(opIndex: number, phraseIndex: number, sysData: SysData): void {
-    this._lookAhead++;
     this._opExecute(opIndex + 1, phraseIndex, sysData);
-    this._lookAhead--;
     sysData.phraseLength = 0;
     switch (sysData.state) {
       case id.EMPTY:
@@ -612,9 +610,7 @@ export default class Parser {
   // *Always* backtracks on any matched phrase and returns EMPTY
   // on success (failure of its child node).
   _opNOT(opIndex: number, phraseIndex: number, sysData: SysData): void {
-    this._lookAhead++;
     this._opExecute(opIndex + 1, phraseIndex, sysData);
-    this._lookAhead--;
     sysData.phraseLength = 0;
     switch (sysData.state) {
       case id.EMPTY:
@@ -720,7 +716,6 @@ export default class Parser {
     }
     sysData.state = id.ACTIVE;
     sysData.phraseLength = 0;
-    sysData.lookAhead = this._lookAhead;
     if (this._trace?.down) {
       this._trace.down(op, phraseIndex, sysData.lookAhead);
     }
@@ -744,10 +739,18 @@ export default class Parser {
         this._opUDT(opIndex, phraseIndex, sysData);
         break;
       case id.AND:
+        this._lookAhead++;
+        sysData.lookAhead = this._lookAhead;
         this._opAND(opIndex, phraseIndex, sysData);
+        this._lookAhead--;
+        sysData.lookAhead = this._lookAhead;
         break;
       case id.NOT:
+        this._lookAhead++;
+        sysData.lookAhead = this._lookAhead;
         this._opNOT(opIndex, phraseIndex, sysData);
+        this._lookAhead--;
+        sysData.lookAhead = this._lookAhead;
         break;
       case id.TRG:
         this._opTRG(opIndex, phraseIndex, sysData);
