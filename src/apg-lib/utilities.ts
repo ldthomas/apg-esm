@@ -88,6 +88,52 @@ export function charsToString(chars: number[], phraseIndex?: number, phraseLengt
   }
   return '';
 }
+
+function isInvalidXmlCodePoint(code: number): boolean {
+  return (
+    !Number.isFinite(code) ||
+    code < 0 ||
+    code > 0x10ffff ||
+    (code >= 0x0000 && code <= 0x0008) ||
+    (code >= 0x000b && code <= 0x000c) ||
+    (code >= 0x000e && code <= 0x001f) ||
+    (code >= 0xd800 && code <= 0xdfff) ||
+    (code >= 0xfffe && code <= 0xffff)
+  );
+}
+
+export function charsToXmlString(chars: number[], beg?: number, len?: number): string {
+  let start = 0;
+  let finish = chars.length;
+
+  if (typeof beg === 'number') {
+    if (beg >= chars.length) {
+      return '';
+    }
+    start = beg < 0 ? 0 : beg;
+  }
+  if (typeof len === 'number') {
+    if (len <= 0) {
+      return '';
+    }
+    finish = len > chars.length - start ? chars.length : start + len;
+  }
+
+  const sanitized = chars.slice(start, finish).map((code) => (isInvalidXmlCodePoint(code) ? 0xfffd : code));
+  const CHUNK = 0x8000;
+  let out = '';
+  for (let i = 0; i < sanitized.length; i += CHUNK) {
+    out += String.fromCodePoint.apply(null, sanitized.slice(i, i + CHUNK));
+  }
+
+  return out
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/'/g, '&apos;')
+    .replace(/"/g, '&quot;');
+}
+
 /**
  * Translates a JavaScript string into an array of integer Unicode code points.
  * @param string - The input string.

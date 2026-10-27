@@ -10,7 +10,7 @@
  * Attach to a parser instance via {@link Parser#setAst}.
  */
 import id from './identifiers.js';
-import { charsToDec, charsToAscii, charsToHex, charsToUnicode } from './utilities.js';
+import { charsToXmlString } from './utilities.js';
 import type { AstCallback, GrammarObject, GrammarRule, GrammarUdt } from './types.js';
 
 const THIS_FILE = 'ast.js: ';
@@ -189,33 +189,25 @@ export default class Ast {
 
   /**
    * Generates an XML representation of the AST.
-   * @param modeArg - Display mode for captured phrases:
-   *   `'ascii'` (default), `'decimal'`, `'hexadecimal'`, or `'unicode'`.
+   * When converting character codes to an XML string, 
+   * any character code that is not permitted by the XML 1.0 character rules 
+   * is replaced with U+FFFD (REPLACEMENT CHARACTER). 
+   * This allows conversion to continue without introducing XML-invalid characters. 
+   * Consequently, the resulting string may not preserve the original input exactly.
+   * The characters &<>"' are replaced with their respective XML entities,
+   * &amp;, &lt;, &gt;, &quot; and &apos;
+   * @param modeArg - ignored; kept for backward compatibility only.
    * @returns Well-formed XML string representing the AST.
    */
   toXml(modeArg?: string): string {
-    let display: (chars: number[], beg?: number, len?: number) => string = charsToDec;
-    let caption = 'decimal integer character codes';
-    if (typeof modeArg === 'string' && modeArg.length >= 3) {
-      const mode = modeArg.slice(0, 3).toLowerCase();
-      if (mode === 'asc') {
-        display = charsToAscii;
-        caption = 'ASCII for printing characters, hex for non-printing';
-      } else if (mode === 'hex') {
-        display = charsToHex;
-        caption = 'hexadecimal integer character codes';
-      } else if (mode === 'uni') {
-        display = charsToUnicode;
-        caption = 'Unicode UTF-32 integer character codes';
-      }
-    }
+    let caption = 'Unicode with special characters escaped and invalid characters replaced with 0xFFFD';
     let xml = '';
     let depth = 0;
     xml += '<?xml version="1.0" encoding="utf-8"?>\n';
     xml += `<root nodes="${this._records.length / 2}" characters="${this._chars.length}">\n`;
     xml += `<!-- input string, ${caption} -->\n`;
     xml += indent(depth + 2);
-    xml += display(this._chars);
+    xml += charsToXmlString(this._chars);
     xml += '\n';
     this._records.forEach((rec) => {
       if (rec.state === id.SEM_PRE) {
@@ -223,7 +215,7 @@ export default class Ast {
         xml += indent(depth);
         xml += `<node name="${rec.name}" index="${rec.phraseIndex}" length="${rec.phraseLength}">\n`;
         xml += indent(depth + 2);
-        xml += display(this._chars, rec.phraseIndex, rec.phraseLength);
+        xml += charsToXmlString(this._chars, rec.phraseIndex, rec.phraseLength);
         xml += '\n';
       } else {
         xml += indent(depth);
