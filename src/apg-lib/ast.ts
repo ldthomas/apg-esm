@@ -194,18 +194,21 @@ export default class Ast {
    * is replaced with U+FFFD (REPLACEMENT CHARACTER). 
    * This allows conversion to continue without introducing XML-invalid characters. 
    * Consequently, the resulting string may not preserve the original input exactly.
-   * The characters &<>"' are replaced with their respective XML entities,
+   * The special characters &<>"' are replaced with their respective XML entities,
    * &amp;, &lt;, &gt;, &quot; and &apos;
    * @param modeArg - ignored; kept for backward compatibility only.
    * @returns Well-formed XML string representing the AST.
    */
   toXml(modeArg?: string): string {
-    let caption = 'Unicode with special characters escaped and invalid characters replaced with 0xFFFD';
     let xml = '';
     let depth = 0;
     xml += '<?xml version="1.0" encoding="utf-8"?>\n';
+    xml += `<!--\n`;
+    xml += `  Caveat: AST node phrases may not be faithfully represented.\n`;
+    xml += `          Invalid XML characters are replaced with 0xFFFD.\n`;
+    xml += `          Special characters &<>"\' are escaped with XML entities.\n`;
+    xml += `-->\n`;
     xml += `<root nodes="${this._records.length / 2}" characters="${this._chars.length}">\n`;
-    xml += `<!-- input string, ${caption} -->\n`;
     xml += indent(depth + 2);
     xml += charsToXmlString(this._chars);
     xml += '\n';

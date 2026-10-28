@@ -69,6 +69,7 @@ export interface TraceLike {
   init?(rules: GrammarRule[], udts: GrammarUdt[], chars: number[]): void;
   down?(op: GrammarOpcode, phraseIndex: number, lookAhead: number): void;
   up?(op: GrammarOpcode, state: number, phraseIndex: number, phraseLength: number, lookAhead: number): void;
+  display?(): string;
 }
 
 /**
@@ -79,6 +80,7 @@ export interface TraceSabnfLike {
   init?(sabnfLines: string[], chars: number[]): void;
   down?(op: GrammarOpcode): void;
   up?(op: GrammarOpcode, state: number, phraseIndex: number, phraseLength: number): void;
+  display?(): string;
 }
 
 /**
@@ -93,6 +95,8 @@ export interface AstLike {
   down?(index: number, name: string): void;
   up?(index: number, name: string, phraseIndex: number, phraseLength: number): void;
   setLength?(length: number | undefined): void;
+  translate?(data: unknown): void;
+  toXml?(modeArg?: string): string;
 }
 
 /**
@@ -102,6 +106,8 @@ export interface StatsLike {
   statsObject?: string;
   init?(rules: GrammarRule[], udts: GrammarUdt[]): void;
   collect?(op: GrammarOpcode, sysData: SysData): void;
+  displayStats?(): string;
+  displayHits?(type?: string): string;
 }
 
 export interface ParseResult {
